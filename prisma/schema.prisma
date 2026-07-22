@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,191 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------- Customers ----------
+
+model Customer {
+  id        String  @id @default(cuid())
+  name      String // company name, or person's name for individuals
+  email     String?
+  phone     String?
+  website   String?
+  taxExempt Boolean @default(false)
+  notes     String? // internal notes, never shown to the customer
+  archived  Boolean @default(false)
+
+  contacts  Contact[]
+  addresses Address[]
+  quotes    Quote[]
+  invoices  Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([archived])
+}
+
+model Contact {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  firstName String
+  lastName  String?
+  email     String?
+  phone     String?
+  isPrimary Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+enum AddressType {
+  BILLING
+  SHIPPING
+}
+
+model Address {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  type       AddressType
+  line1      String
+  line2      String?
+  city       String
+  state      String?
+  postalCode String?
+  country    String      @default("US")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+// ---------- Quotes ----------
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  APPROVED
+  DECLINED
+  EXPIRED
+  CONVERTED // turned into an invoice
+}
+
+model Quote {
+  id         String   @id @default(cuid())
+  number     Int      @unique @default(autoincrement()) // displayed as Q-<number>
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  status     QuoteStatus @default(DRAFT)
+  title      String? // short job description, e.g. "50 staff polos, 2-color front"
+  issueDate  DateTime    @default(now())
+  validUntil DateTime?
+
+  // Money is always Decimal, never Float. Totals are computed in app code
+  // (with tests) and persisted here so documents are stable historical records.
+  subtotal  Decimal @default(0) @db.Decimal(12, 2)
+  taxRate   Decimal @default(0) @db.Decimal(6, 5) // fraction, e.g. 0.08250
+  taxAmount Decimal @default(0) @db.Decimal(12, 2)
+  total     Decimal @default(0) @db.Decimal(12, 2)
+
+  notes String? // internal
+  terms String? // shown on the quote
+
+  lineItems QuoteLineItem[]
+  invoices  Invoice[] // invoices created from this quote
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model QuoteLineItem {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @default(0) @db.Decimal(12, 4) // per-unit prices can be fractions of a cent
+  taxable     Boolean @default(true)
+  lineTotal   Decimal @default(0) @db.Decimal(12, 2) // quantity * unitPrice, rounded; computed in app code
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([quoteId])
+}
+
+// ---------- Invoices ----------
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOID
+}
+
+model Invoice {
+  id         String   @id @default(cuid())
+  number     Int      @unique @default(autoincrement()) // displayed as INV-<number>
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  sourceQuoteId String? // set when the invoice was converted from a quote
+  sourceQuote   Quote?  @relation(fields: [sourceQuoteId], references: [id])
+
+  status    InvoiceStatus @default(DRAFT)
+  title     String?
+  issueDate DateTime      @default(now())
+  dueDate   DateTime?
+
+  subtotal   Decimal @default(0) @db.Decimal(12, 2)
+  taxRate    Decimal @default(0) @db.Decimal(6, 5)
+  taxAmount  Decimal @default(0) @db.Decimal(12, 2)
+  total      Decimal @default(0) @db.Decimal(12, 2)
+  amountPaid Decimal @default(0) @db.Decimal(12, 2) // maintained by the payments stage; balance due = total - amountPaid
+
+  notes String? // internal
+  terms String? // shown on the invoice
+
+  lineItems InvoiceLineItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model InvoiceLineItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @default(0) @db.Decimal(12, 4)
+  taxable     Boolean @default(true)
+  lineTotal   Decimal @default(0) @db.Decimal(12, 2)
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceId])
 }
