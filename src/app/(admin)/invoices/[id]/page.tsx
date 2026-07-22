@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { InvoiceActions } from "@/components/document-actions";
 import { DocumentLines } from "@/components/document-lines";
+import { PaymentsSection } from "@/components/payments-section";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,6 +28,7 @@ export default async function InvoicePage({
       customer: true,
       lineItems: { orderBy: { sortOrder: "asc" } },
       sourceQuote: { select: { id: true, number: true } },
+      payments: { orderBy: { receivedAt: "asc" } },
     },
   });
   if (!invoice) notFound();
@@ -115,6 +117,29 @@ export default async function InvoicePage({
         </CardHeader>
         <CardContent>
           <DocumentLines lines={invoice.lineItems} totals={invoice} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Payments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PaymentsSection
+            invoiceId={invoice.id}
+            balance={balance.toFixed(2)}
+            canRecord={
+              invoice.status === "SENT" || invoice.status === "PARTIALLY_PAID"
+            }
+            payments={invoice.payments.map((p) => ({
+              id: p.id,
+              amount: p.amount.toString(),
+              method: p.method,
+              reference: p.reference,
+              receivedAt: p.receivedAt.toISOString(),
+              notes: p.notes,
+            }))}
+          />
         </CardContent>
       </Card>
 

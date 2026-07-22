@@ -58,3 +58,17 @@ export const documentInput = z.object({
 
 export type DocumentInput = z.infer<typeof documentInput>;
 export type LineItemInput = z.infer<typeof lineItemInput>;
+
+export const paymentInput = z.object({
+  // String end-to-end; whole cents only.
+  amount: z
+    .string()
+    .trim()
+    .regex(/^\d{1,10}(\.\d{1,2})?$/, "Enter an amount like 100.00"),
+  method: z.enum(["CASH", "CHECK", "CARD", "ACH", "OTHER"]),
+  reference: optionalTrimmed,
+  receivedAt: z.string().trim().min(1, "Date received is required"), // yyyy-mm-dd
+  notes: optionalTrimmed,
+});
+
+export type PaymentInput = z.infer<typeof paymentInput>;

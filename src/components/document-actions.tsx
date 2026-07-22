@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
-import {
-  deleteInvoice,
-  markInvoicePaid,
-  setInvoiceStatus,
-} from "@/lib/actions/invoices";
+import { deleteInvoice, setInvoiceStatus } from "@/lib/actions/invoices";
 import {
   convertQuoteToInvoice,
   deleteQuote,
@@ -150,15 +146,6 @@ export function InvoiceActions({ id, status }: { id: string; status: string }) {
             onClick={() => run(() => setInvoiceStatus(id, "SENT"))}
           >
             Mark sent
-          </Button>
-        )}
-        {open && status !== "DRAFT" && (
-          <Button
-            size="sm"
-            disabled={pending}
-            onClick={() => run(() => markInvoicePaid(id))}
-          >
-            Mark paid
           </Button>
         )}
         {open && (

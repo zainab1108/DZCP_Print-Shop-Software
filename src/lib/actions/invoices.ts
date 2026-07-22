@@ -140,34 +140,6 @@ export async function setInvoiceStatus(
   }
 }
 
-/**
- * Stage-1 shortcut: mark the full balance received. Real payment records
- * (partial payments, methods, dates) arrive in the payments stage.
- */
-export async function markInvoicePaid(id: string): Promise<ActionResult> {
-  try {
-    const invoice = await prisma.invoice.findUnique({ where: { id } });
-    if (!invoice) return { ok: false, error: "Invoice not found" };
-    if (invoice.status === "PAID" || invoice.status === "VOID") {
-      return {
-        ok: false,
-        error: `Invoice is already ${invoice.status.toLowerCase()}`,
-      };
-    }
-    await prisma.invoice.update({
-      where: { id },
-      data: { status: "PAID", amountPaid: invoice.total },
-    });
-    revalidateInvoice(id, invoice.customerId);
-    return { ok: true, id };
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : "Failed to update",
-    };
-  }
-}
-
 export async function deleteInvoice(id: string): Promise<ActionResult> {
   try {
     const invoice = await prisma.invoice.findUnique({ where: { id } });

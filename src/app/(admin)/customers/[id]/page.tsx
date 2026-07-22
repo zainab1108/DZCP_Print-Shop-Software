@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ArchiveCustomerButton } from "@/components/document-actions";
+import { PortalAccessCard } from "@/components/portal-access-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -104,6 +105,11 @@ export default async function CustomerPage({
         <AddressCard title="Billing address" address={billing} />
         <AddressCard title="Shipping address" address={shipping} />
       </div>
+
+      <PortalAccessCard
+        customerId={customer.id}
+        portalToken={customer.portalToken}
+      />
 
       <Card>
         <CardHeader>
