@@ -29,7 +29,7 @@ export default async function Home() {
   const db = await checkDatabase();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 p-8 dark:bg-zinc-950">
+    <main className="flex justify-center p-8">
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle>Print Shop Manager</CardTitle>

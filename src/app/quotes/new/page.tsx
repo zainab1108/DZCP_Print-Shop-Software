@@ -1,0 +1,28 @@
+import { DocumentForm } from "@/components/document-form";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+export default async function NewQuotePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ customerId?: string }>;
+}) {
+  const { customerId } = await searchParams;
+  const customers = await prisma.customer.findMany({
+    where: { archived: false },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, taxExempt: true },
+  });
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6">
+      <h1 className="text-2xl font-semibold">New quote</h1>
+      <DocumentForm
+        kind="quote"
+        customers={customers}
+        defaultCustomerId={customerId}
+      />
+    </div>
+  );
+}
