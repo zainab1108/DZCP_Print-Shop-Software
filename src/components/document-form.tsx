@@ -24,6 +24,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  PriceCalculator,
+  type GridOption,
+} from "@/components/price-calculator";
 import { createInvoice, updateInvoice } from "@/lib/actions/invoices";
 import { createQuote, updateQuote } from "@/lib/actions/quotes";
 import { formatMoney } from "@/lib/format";
@@ -70,12 +74,14 @@ export function DocumentForm({
   initial,
   documentId,
   defaultCustomerId,
+  grids = [],
 }: {
   kind: "quote" | "invoice";
   customers: CustomerOption[];
   initial?: DocumentFormValues;
   documentId?: string;
   defaultCustomerId?: string;
+  grids?: GridOption[];
 }) {
   const router = useRouter();
   const [values, setValues] = useState<DocumentFormValues>(
@@ -282,21 +288,35 @@ export function DocumentForm({
                       {formatMoney(lineTotal(line))}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={values.lineItems.length === 1}
-                        onClick={() =>
-                          set({
-                            lineItems: values.lineItems.filter(
-                              (_, j) => j !== i,
-                            ),
-                          })
-                        }
-                      >
-                        ✕
-                      </Button>
+                      <div className="flex gap-1">
+                        {grids.length > 0 && (
+                          <PriceCalculator
+                            grids={grids}
+                            initialQuantity={line.quantity}
+                            onApply={(v) =>
+                              setLine(i, {
+                                quantity: v.quantity,
+                                unitPrice: v.unitPrice,
+                              })
+                            }
+                          />
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={values.lineItems.length === 1}
+                          onClick={() =>
+                            set({
+                              lineItems: values.lineItems.filter(
+                                (_, j) => j !== i,
+                              ),
+                            })
+                          }
+                        >
+                          ✕
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

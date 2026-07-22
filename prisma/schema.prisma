@@ -181,6 +181,48 @@ model Invoice {
   @@index([dueDate])
 }
 
+// ---------- Pricing ----------
+
+model PriceGrid {
+  id        String  @id @default(cuid())
+  name      String // e.g. "Screen print — standard"
+  tierLabel String  @default("Colors") // what the tier axis means, e.g. "Colors" or "Stitch count (k)"
+  notes     String?
+
+  cells PriceCell[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// One cell of a grid: from minQuantity pieces up to the next break, at this
+// tier, decoration costs unitPrice per piece. Prices resolved from grids are
+// COPIED into documents — changing a grid never rewrites existing quotes.
+model PriceCell {
+  id     String    @id @default(cuid())
+  gridId String
+  grid   PriceGrid @relation(fields: [gridId], references: [id], onDelete: Cascade)
+
+  minQuantity Int
+  tier        Int // e.g. number of print colors
+  unitPrice   Decimal @db.Decimal(12, 4)
+
+  @@unique([gridId, minQuantity, tier])
+  @@index([gridId])
+}
+
+// Global garment-markup tiers: for a supplier cost >= minCost, sell at
+// cost * multiplier. The applicable rule is the one with the highest
+// minCost not exceeding the cost.
+model MarkupRule {
+  id         String  @id @default(cuid())
+  minCost    Decimal @unique @db.Decimal(12, 2)
+  multiplier Decimal @db.Decimal(6, 3) // e.g. 2.500
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum PaymentMethod {
   CASH
   CHECK

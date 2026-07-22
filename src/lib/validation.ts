@@ -72,3 +72,55 @@ export const paymentInput = z.object({
 });
 
 export type PaymentInput = z.infer<typeof paymentInput>;
+
+const price4dp = z
+  .string()
+  .trim()
+  .regex(/^\d{1,8}(\.\d{1,4})?$/, "Enter a price like 2.75");
+
+export const gridInput = z.object({
+  name: z.string().trim().min(1, "Grid name is required"),
+  tierLabel: z.string().trim().min(1).default("Colors"),
+  notes: optionalTrimmed,
+  cells: z
+    .array(
+      z.object({
+        minQuantity: z.number().int().min(1),
+        tier: z.number().int().min(1),
+        unitPrice: price4dp,
+      }),
+    )
+    .min(1, "Add at least one price cell"),
+});
+
+export type GridInput = z.infer<typeof gridInput>;
+
+export const markupRulesInput = z.object({
+  rules: z.array(
+    z.object({
+      minCost: z
+        .string()
+        .trim()
+        .regex(/^\d{1,8}(\.\d{1,2})?$/, "Enter a cost like 5.00"),
+      multiplier: z
+        .string()
+        .trim()
+        .regex(/^\d{1,3}(\.\d{1,3})?$/, "Enter a multiplier like 2.5"),
+    }),
+  ),
+});
+
+export type MarkupRulesInput = z.infer<typeof markupRulesInput>;
+
+export const calcInput = z.object({
+  gridId: z.string().min(1, "Pick a price grid"),
+  quantity: z.number().int().min(1, "Quantity must be at least 1"),
+  tier: z.number().int().min(1),
+  garmentCost: z
+    .string()
+    .trim()
+    .regex(/^$|^\d{1,8}(\.\d{1,2})?$/, "Enter a cost like 3.20")
+    .default(""),
+});
+
+export type CalcInput = z.infer<typeof calcInput>;

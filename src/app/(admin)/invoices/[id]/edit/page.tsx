@@ -21,11 +21,17 @@ export default async function EditInvoicePage({
     redirect(`/invoices/${id}`);
   }
 
-  const customers = await prisma.customer.findMany({
-    where: { archived: false },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, taxExempt: true },
-  });
+  const [customers, grids] = await Promise.all([
+    prisma.customer.findMany({
+      where: { archived: false },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, taxExempt: true },
+    }),
+    prisma.priceGrid.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, tierLabel: true },
+    }),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -35,6 +41,7 @@ export default async function EditInvoicePage({
       <DocumentForm
         kind="invoice"
         customers={customers}
+        grids={grids}
         documentId={id}
         initial={{
           customerId: invoice.customerId,
