@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { QuoteActions } from "@/components/document-actions";
 import { DocumentLines } from "@/components/document-lines";
 import { ProofsSection } from "@/components/proofs-section";
+import { SendToProduction } from "@/components/send-to-production";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, invoiceNumber, quoteNumber } from "@/lib/format";
@@ -24,9 +25,13 @@ export default async function QuotePage({
       lineItems: { orderBy: { sortOrder: "asc" } },
       invoices: { select: { id: true, number: true } },
       proofs: { orderBy: { version: "asc" } },
+      job: { select: { id: true, number: true, status: true } },
     },
   });
   if (!quote) notFound();
+
+  const producible =
+    quote.status === "APPROVED" || quote.status === "CONVERTED";
 
   return (
     <div className="space-y-6">
@@ -42,7 +47,14 @@ export default async function QuotePage({
             <p className="text-muted-foreground">{quote.title}</p>
           )}
         </div>
-        <QuoteActions id={quote.id} status={quote.status} />
+        <div className="flex flex-col items-end gap-2">
+          <QuoteActions id={quote.id} status={quote.status} />
+          <SendToProduction
+            quoteId={quote.id}
+            producible={producible}
+            job={quote.job}
+          />
+        </div>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-3">

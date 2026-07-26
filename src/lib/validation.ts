@@ -124,3 +124,12 @@ export const calcInput = z.object({
 });
 
 export type CalcInput = z.infer<typeof calcInput>;
+
+export const jobScheduleInput = z.object({
+  priority: z.enum(["LOW", "NORMAL", "HIGH", "RUSH"]),
+  assignee: optionalTrimmed,
+  dueDate: optionalTrimmed, // yyyy-mm-dd or empty
+  notes: optionalTrimmed,
+});
+
+export type JobScheduleInput = z.infer<typeof jobScheduleInput>;

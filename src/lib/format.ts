@@ -47,6 +47,10 @@ export function invoiceNumber(n: number): string {
   return `INV-${n}`;
 }
 
+export function jobNumber(n: number): string {
+  return `JOB-${n}`;
+}
+
 /** Rate fraction (0.0825) -> percent string for form inputs ("8.25"). */
 export function rateToPercent(rate: { toString(): string } | string): string {
   return String(Number(rate.toString()) * 100);
