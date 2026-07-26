@@ -133,3 +133,71 @@ export const jobScheduleInput = z.object({
 });
 
 export type JobScheduleInput = z.infer<typeof jobScheduleInput>;
+
+const cost4dp = z
+  .string()
+  .trim()
+  .regex(/^\d{1,8}(\.\d{1,4})?$/, "Enter a cost like 3.50");
+
+export const supplierInput = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+  email: optionalTrimmed,
+  phone: optionalTrimmed,
+  website: optionalTrimmed,
+  account: optionalTrimmed,
+  notes: optionalTrimmed,
+});
+
+export type SupplierInput = z.infer<typeof supplierInput>;
+
+export const inventoryItemInput = z.object({
+  sku: z.string().trim().min(1, "SKU is required"),
+  name: z.string().trim().min(1, "Name is required"),
+  unit: z.string().trim().min(1).default("each"),
+  reorderPoint: z.number().int().min(0),
+  unitCost: cost4dp,
+  supplierId: optionalTrimmed,
+});
+
+export type InventoryItemInput = z.infer<typeof inventoryItemInput>;
+
+export const stockAdjustInput = z.object({
+  // Signed whole number: positive adds, negative removes.
+  delta: z
+    .string()
+    .trim()
+    .regex(/^-?\d{1,9}$/, "Enter a whole number, e.g. 12 or -3"),
+  reason: z.enum(["RECEIVED", "CONSUMED", "ADJUSTMENT"]),
+  note: optionalTrimmed,
+  jobId: optionalTrimmed,
+});
+
+export type StockAdjustInput = z.infer<typeof stockAdjustInput>;
+
+export const poLineInput = z.object({
+  itemId: optionalTrimmed,
+  description: z.string().trim().min(1, "Description is required"),
+  quantity: z.number().int().min(1),
+  unitCost: cost4dp,
+});
+
+export const purchaseOrderInput = z.object({
+  supplierId: z.string().min(1, "Pick a supplier"),
+  expectedAt: optionalTrimmed,
+  notes: optionalTrimmed,
+  lines: z.array(poLineInput).min(1, "Add at least one line"),
+});
+
+export type PurchaseOrderInput = z.infer<typeof purchaseOrderInput>;
+
+export const receiveInput = z.object({
+  // How many of each line are being received now, keyed by line id.
+  receipts: z.array(
+    z.object({
+      lineId: z.string().min(1),
+      quantity: z.number().int().min(0),
+    }),
+  ),
+});
+
+export type ReceiveInput = z.infer<typeof receiveInput>;

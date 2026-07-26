@@ -179,6 +179,8 @@ model Job {
   // Set when the job first reaches SHIPPED, for lead-time reporting later.
   completedAt DateTime?
 
+  movements StockMovement[] // stock consumed against this job
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -347,4 +349,131 @@ model InvoiceLineItem {
   updatedAt DateTime @updatedAt
 
   @@index([invoiceId])
+}
+
+// ---------- Inventory & purchasing ----------
+
+model Supplier {
+  id      String  @id @default(cuid())
+  name    String
+  email   String?
+  phone   String?
+  website String?
+  account String? // our account number with this supplier
+  notes   String?
+  archived Boolean @default(false)
+
+  items          InventoryItem[]
+  purchaseOrders PurchaseOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+model InventoryItem {
+  id          String  @id @default(cuid())
+  sku         String  @unique
+  name        String // e.g. "Gildan 5000 - Black - L"
+  unit        String  @default("each") // each, case, roll, etc.
+  // On-hand is a cached column kept in sync via StockMovement rows in a
+  // transaction; movements are the audit trail (like invoice.amountPaid).
+  quantityOnHand Int    @default(0)
+  reorderPoint   Int    @default(0)
+  unitCost       Decimal @default(0) @db.Decimal(12, 4) // last known cost per unit
+  archived       Boolean @default(false)
+
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+
+  movements StockMovement[]
+  poLines   PurchaseOrderLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([supplierId])
+}
+
+enum StockReason {
+  RECEIVED // from a purchase order
+  CONSUMED // used by a production job
+  ADJUSTMENT // manual correction (count, damage, etc.)
+}
+
+model StockMovement {
+  id     String        @id @default(cuid())
+  itemId String
+  item   InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  delta  Int // signed: +received, -consumed, +/- adjustment
+  reason StockReason
+  note   String?
+
+  // Optional provenance links.
+  jobId String?
+  job   Job?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  poId  String?
+  po    PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([itemId])
+  @@index([jobId])
+  @@index([poId])
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  ORDERED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id         String   @id @default(cuid())
+  number     Int      @unique @default(autoincrement()) // displayed as PO-<number>
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  status     PurchaseOrderStatus @default(DRAFT)
+  orderedAt  DateTime?
+  expectedAt DateTime?
+  notes      String?
+
+  total Decimal @default(0) @db.Decimal(12, 2) // computed from lines in app code (tested)
+
+  lines     PurchaseOrderLine[]
+  movements StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+model PurchaseOrderLine {
+  id     String        @id @default(cuid())
+  poId   String
+  po     PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+
+  itemId String?
+  item   InventoryItem? @relation(fields: [itemId], references: [id])
+
+  description      String // snapshot; item may be renamed later
+  quantity         Int     @default(1)
+  quantityReceived Int     @default(0)
+  unitCost         Decimal @default(0) @db.Decimal(12, 4)
+  lineTotal        Decimal @default(0) @db.Decimal(12, 2) // quantity * unitCost, rounded
+  sortOrder        Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([poId])
+  @@index([itemId])
 }
