@@ -110,6 +110,7 @@ model Quote {
 
   lineItems QuoteLineItem[]
   invoices  Invoice[] // invoices created from this quote
+  proofs    Proof[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -179,6 +180,39 @@ model Invoice {
   @@index([customerId])
   @@index([status])
   @@index([dueDate])
+}
+
+// ---------- Art approval ----------
+
+enum ProofStatus {
+  PENDING // uploaded, awaiting a decision
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+// One uploaded artwork proof version for a quote. Files live on local disk
+// (uploads/proofs/<id>.<ext>); this row is the metadata + approval record.
+model Proof {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  version  Int // per-quote, 1-based
+  fileName String // original upload name, display only
+  fileExt  String // canonical extension we stored under, e.g. "png"
+  mimeType String
+  size     Int
+
+  status    ProofStatus @default(PENDING)
+  note      String? // shop's note shown to the customer
+  feedback  String? // customer's comment (required for change requests)
+  decidedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([quoteId, version])
+  @@index([quoteId])
 }
 
 // ---------- Pricing ----------

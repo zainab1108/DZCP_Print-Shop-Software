@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { QuoteActions } from "@/components/document-actions";
 import { DocumentLines } from "@/components/document-lines";
+import { ProofsSection } from "@/components/proofs-section";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, invoiceNumber, quoteNumber } from "@/lib/format";
@@ -22,6 +23,7 @@ export default async function QuotePage({
       customer: true,
       lineItems: { orderBy: { sortOrder: "asc" } },
       invoices: { select: { id: true, number: true } },
+      proofs: { orderBy: { version: "asc" } },
     },
   });
   if (!quote) notFound();
@@ -97,6 +99,28 @@ export default async function QuotePage({
         </CardHeader>
         <CardContent>
           <DocumentLines lines={quote.lineItems} totals={quote} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Art proofs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProofsSection
+            quoteId={quote.id}
+            proofs={quote.proofs.map((p) => ({
+              id: p.id,
+              version: p.version,
+              fileName: p.fileName,
+              mimeType: p.mimeType,
+              status: p.status,
+              note: p.note,
+              feedback: p.feedback,
+              decidedAt: p.decidedAt?.toISOString() ?? null,
+              createdAt: p.createdAt.toISOString(),
+            }))}
+          />
         </CardContent>
       </Card>
 

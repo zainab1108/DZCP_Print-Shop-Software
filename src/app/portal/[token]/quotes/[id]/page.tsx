@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DocumentLines } from "@/components/document-lines";
+import { PortalProofs } from "@/components/portal-proofs";
 import { PortalQuoteActions } from "@/components/portal-quote-actions";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +25,10 @@ export default async function PortalQuotePage({
 
   const quote = await prisma.quote.findUnique({
     where: { id },
-    include: { lineItems: { orderBy: { sortOrder: "asc" } } },
+    include: {
+      lineItems: { orderBy: { sortOrder: "asc" } },
+      proofs: { orderBy: { version: "asc" } },
+    },
   });
   if (!quote || quote.customerId !== customer.id || quote.status === "DRAFT") {
     notFound();
@@ -59,6 +63,28 @@ export default async function PortalQuotePage({
               This quote is awaiting your decision.
             </p>
             <PortalQuoteActions token={token} quoteId={quote.id} />
+          </CardContent>
+        </Card>
+      )}
+
+      {quote.proofs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Art proofs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PortalProofs
+              token={token}
+              proofs={quote.proofs.map((p) => ({
+                id: p.id,
+                version: p.version,
+                mimeType: p.mimeType,
+                status: p.status,
+                note: p.note,
+                feedback: p.feedback,
+                createdAt: p.createdAt.toISOString(),
+              }))}
+            />
           </CardContent>
         </Card>
       )}
