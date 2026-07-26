@@ -180,12 +180,66 @@ model Job {
   completedAt DateTime?
 
   movements StockMovement[] // stock consumed against this job
+  shipments Shipment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([dueDate])
+}
+
+// ---------- Shipping ----------
+
+enum Carrier {
+  UPS
+  USPS
+  FEDEX
+  DHL
+  OTHER
+}
+
+enum ShipmentStatus {
+  PENDING // created, not yet handed to the carrier
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+}
+
+// An outbound shipment for a production job. Carrier + tracking number are
+// entered manually (from the carrier's own software); tracking URLs are
+// derived, not fetched. Live rate/label APIs are intentionally not wired.
+model Shipment {
+  id    String @id @default(cuid())
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  carrier        Carrier        @default(OTHER)
+  service        String? // e.g. "Ground", "Priority Mail"
+  trackingNumber String?
+  status         ShipmentStatus @default(PENDING)
+  cost           Decimal        @default(0) @db.Decimal(12, 2)
+  weightOz       Int? // package weight in ounces
+
+  // Ship-to snapshot so the record is stable if the customer address changes.
+  shipToName String?
+  shipToLine1 String?
+  shipToLine2 String?
+  shipToCity  String?
+  shipToState String?
+  shipToPostalCode String?
+  shipToCountry    String?
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  notes       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([status])
 }
 
 // ---------- Invoices ----------

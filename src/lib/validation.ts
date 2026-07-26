@@ -201,3 +201,24 @@ export const receiveInput = z.object({
 });
 
 export type ReceiveInput = z.infer<typeof receiveInput>;
+
+export const shipmentInput = z.object({
+  carrier: z.enum(["UPS", "USPS", "FEDEX", "DHL", "OTHER"]),
+  service: optionalTrimmed,
+  trackingNumber: optionalTrimmed,
+  status: z.enum(["PENDING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "RETURNED"]),
+  cost: z
+    .string()
+    .trim()
+    .regex(/^$|^\d{1,8}(\.\d{1,2})?$/, "Enter a cost like 12.50")
+    .default(""),
+  weightOz: z
+    .string()
+    .trim()
+    .regex(/^$|^\d{1,6}$/, "Enter ounces as a whole number")
+    .default(""),
+  shippedAt: optionalTrimmed,
+  notes: optionalTrimmed,
+});
+
+export type ShipmentInput = z.infer<typeof shipmentInput>;

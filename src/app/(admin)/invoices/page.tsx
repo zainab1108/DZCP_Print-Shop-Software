@@ -33,9 +33,22 @@ export default async function InvoicesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Invoices</h1>
-        <Button nativeButton={false} render={<Link href="/invoices/new" />}>
-          New invoice
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <a href="/api/export/accounting" download>
+                Export CSV
+              </a>
+            }
+          >
+            Export CSV
+          </Button>
+          <Button nativeButton={false} render={<Link href="/invoices/new" />}>
+            New invoice
+          </Button>
+        </div>
       </div>
 
       {invoices.length === 0 ? (

@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/table";
 import { formatDate, formatMoney, invoiceNumber } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import {
+  CARRIER_LABELS,
+  isDispatched,
+  SHIPMENT_STATUS_LABELS,
+  trackingUrl,
+} from "@/lib/shipping";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +40,11 @@ export default async function PortalInvoicePage({
     include: {
       lineItems: { orderBy: { sortOrder: "asc" } },
       payments: { orderBy: { receivedAt: "asc" } },
+      sourceQuote: {
+        select: {
+          job: { select: { shipments: { orderBy: { createdAt: "desc" } } } },
+        },
+      },
     },
   });
   if (
@@ -45,6 +56,10 @@ export default async function PortalInvoicePage({
   }
 
   const balance = invoice.total.sub(invoice.amountPaid);
+  // Only surface shipments that have actually left the shop.
+  const shipments = (invoice.sourceQuote?.job?.shipments ?? []).filter((s) =>
+    isDispatched(s.status),
+  );
 
   return (
     <div className="space-y-6">
@@ -78,6 +93,48 @@ export default async function PortalInvoicePage({
               <span className="font-semibold">{formatMoney(balance)}</span>
               {invoice.dueDate && <> by {formatDate(invoice.dueDate)}</>}
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {shipments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Shipment tracking</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            {shipments.map((s) => {
+              const url = trackingUrl(s.carrier, s.trackingNumber);
+              return (
+                <div key={s.id} className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">
+                    {CARRIER_LABELS[s.carrier]}
+                  </span>
+                  <StatusBadge
+                    status={s.status}
+                    label={SHIPMENT_STATUS_LABELS[s.status]}
+                  />
+                  {s.trackingNumber &&
+                    (url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono underline-offset-2 hover:underline"
+                      >
+                        {s.trackingNumber}
+                      </a>
+                    ) : (
+                      <span className="font-mono">{s.trackingNumber}</span>
+                    ))}
+                  {s.shippedAt && (
+                    <span className="text-muted-foreground">
+                      shipped {formatDate(s.shippedAt)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}

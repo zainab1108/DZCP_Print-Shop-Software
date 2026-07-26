@@ -6,6 +6,7 @@ import {
   JobScheduleForm,
   JobStatusControl,
 } from "@/components/job-detail-controls";
+import { ShipmentsSection } from "@/components/shipments-section";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -48,6 +49,7 @@ export default async function JobPage({
           },
         },
       },
+      shipments: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!job) notFound();
@@ -175,6 +177,27 @@ export default async function JobPage({
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Shipments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ShipmentsSection
+            jobId={job.id}
+            shipments={job.shipments.map((s) => ({
+              id: s.id,
+              carrier: s.carrier,
+              service: s.service,
+              trackingNumber: s.trackingNumber,
+              status: s.status,
+              cost: s.cost.toString(),
+              shippedAt: s.shippedAt?.toISOString() ?? null,
+              deliveredAt: s.deliveredAt?.toISOString() ?? null,
+            }))}
+          />
         </CardContent>
       </Card>
 

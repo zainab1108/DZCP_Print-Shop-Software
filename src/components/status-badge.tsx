@@ -30,6 +30,11 @@ const styles: Record<string, string> = {
   READY: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
   SHIPPED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
   ON_HOLD: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+  // Shipment statuses.
+  IN_TRANSIT: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+  DELIVERED:
+    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+  RETURNED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
   // Purchase order statuses.
   ORDERED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
   PARTIALLY_RECEIVED:
