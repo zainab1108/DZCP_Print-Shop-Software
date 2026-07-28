@@ -531,3 +531,18 @@ model PurchaseOrderLine {
   @@index([poId])
   @@index([itemId])
 }
+
+// ---------- Auth ----------
+
+// A staff login for the admin area. Created via `npm run create-admin`
+// (the operator supplies their own password); never seeded automatically.
+// The customer portal is separate and uses per-customer tokens, not Users.
+model User {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+  name         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -32,6 +32,7 @@ All eight stages are complete (tested library shown where money/logic is involve
 8. ✅ Dashboards & reporting (dashboard at `/`) — `src/lib/reporting.ts`
 
 **Deferred — need the shop's own external accounts/keys, so left as manual/export paths:**
+
 - Stripe online card payments (slot: portal invoice page)
 - Carrier rate/label APIs (EasyPost/Shippo/UPS) — tracking is entered manually; CSV/deep-links cover the rest
 - QuickBooks/Xero OAuth sync — the `/api/export/accounting` CSV is the offline path
@@ -41,6 +42,13 @@ All eight stages are complete (tested library shown where money/logic is involve
 ## Money = tests
 
 Anything touching money — pricing, tax, totals, discounts, payments — **must have tests**. No exceptions.
+
+## Auth
+
+- The admin area is gated by `src/proxy.ts` (Next 16 renamed `middleware`→`proxy`), which verifies a signed session cookie via `src/lib/auth/session.ts` (HMAC over `AUTH_SECRET`, no DB lookup). It also covers server actions and admin API routes.
+- **`/login`, `/portal/*`, and `/api/portal/*` are intentionally public** — the customer portal has its own per-customer token auth. Don't gate them.
+- Passwords are scrypt-hashed (`src/lib/auth/password.ts`), no external auth service. Create the first staff login with `ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run create-admin` (operator sets the password; never seeded).
+- Requires `AUTH_SECRET` in `.env` (see `.env.example`).
 
 ## Conventions (cont.)
 

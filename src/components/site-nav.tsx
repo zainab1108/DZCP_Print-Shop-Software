@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { LogoutButton } from "@/components/logout-button";
+
 const links = [
   { href: "/customers", label: "Customers" },
   { href: "/quotes", label: "Quotes" },
@@ -11,7 +13,7 @@ const links = [
   { href: "/pricing", label: "Pricing" },
 ];
 
-export function SiteNav() {
+export function SiteNav({ userEmail }: { userEmail?: string }) {
   return (
     <header className="border-b bg-white dark:bg-zinc-900">
       <nav className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
@@ -27,6 +29,14 @@ export function SiteNav() {
             {l.label}
           </Link>
         ))}
+        <div className="ml-auto flex items-center gap-3">
+          {userEmail && (
+            <span className="text-muted-foreground hidden text-xs sm:inline">
+              {userEmail}
+            </span>
+          )}
+          <LogoutButton />
+        </div>
       </nav>
     </header>
   );
