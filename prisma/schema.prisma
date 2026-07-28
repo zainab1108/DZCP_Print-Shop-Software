@@ -534,14 +534,23 @@ model PurchaseOrderLine {
 
 // ---------- Auth ----------
 
-// A staff login for the admin area. Created via `npm run create-admin`
-// (the operator supplies their own password); never seeded automatically.
+// ADMIN manages users and pricing/money config; STAFF does everything else
+// operational. Role authorization is checked live per request (not from the
+// session token) so changes take effect immediately.
+enum Role {
+  ADMIN
+  STAFF
+}
+
+// A staff login for the admin area. First one via `npm run create-admin`
+// (the operator supplies their own password), the rest via the /users page.
 // The customer portal is separate and uses per-customer tokens, not Users.
 model User {
   id           String @id @default(cuid())
   email        String @unique
   passwordHash String
   name         String?
+  role         Role   @default(STAFF)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

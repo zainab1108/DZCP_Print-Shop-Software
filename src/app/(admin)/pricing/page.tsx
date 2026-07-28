@@ -12,11 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { requireAdminPage } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
+  await requireAdminPage(); // pricing/markup is money config — admins only
   const [grids, rules] = await Promise.all([
     prisma.priceGrid.findMany({
       orderBy: { name: "asc" },

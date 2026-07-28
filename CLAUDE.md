@@ -47,8 +47,9 @@ Anything touching money — pricing, tax, totals, discounts, payments — **must
 
 - The admin area is gated by `src/proxy.ts` (Next 16 renamed `middleware`→`proxy`), which verifies a signed session cookie via `src/lib/auth/session.ts` (HMAC over `AUTH_SECRET`, no DB lookup). It also covers server actions and admin API routes.
 - **`/login`, `/portal/*`, and `/api/portal/*` are intentionally public** — the customer portal has its own per-customer token auth. Don't gate them.
-- Passwords are scrypt-hashed (`src/lib/auth/password.ts`), no external auth service. Create the first staff login with `ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run create-admin` (operator sets the password; never seeded).
+- Passwords are scrypt-hashed (`src/lib/auth/password.ts`), no external auth service. Create the first staff login with `ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run create-admin` (operator sets the password; always ADMIN role; never seeded).
 - Requires `AUTH_SECRET` in `.env` (see `.env.example`).
+- **Roles**: `ADMIN` (users, pricing/markup config) vs `STAFF` (everything else). Checked live per request via `getCurrentUser()` — not baked into the session token, so a role change takes effect immediately. Page guard: `requireAdminPage()` (redirects to `/`); action guard: `requireAdminAction()` / the pattern in `src/lib/actions/users.ts`. `src/lib/auth/roles.ts` has `isLastAdmin` — deleting/demoting the sole admin is blocked to prevent lockout. Manage staff at `/users` (admin-only); self-service password change at `/account`.
 
 ## Conventions (cont.)
 

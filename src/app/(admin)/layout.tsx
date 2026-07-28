@@ -9,7 +9,7 @@ export default async function AdminLayout({
 
   return (
     <>
-      <SiteNav userEmail={user?.email} />
+      <SiteNav userEmail={user?.email} isAdmin={user?.role === "ADMIN"} />
       <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         {children}
       </div>

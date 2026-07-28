@@ -34,8 +34,8 @@ async function main() {
   const passwordHash = await hashPassword(password!);
   const user = await prisma.user.upsert({
     where: { email },
-    update: { passwordHash, name },
-    create: { email: email!, passwordHash, name },
+    update: { passwordHash, name, role: "ADMIN" },
+    create: { email: email!, passwordHash, name, role: "ADMIN" },
   });
   await prisma.$disconnect();
 

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 
@@ -17,6 +18,16 @@ export async function getCurrentUser() {
   if (!uid) return null;
   return prisma.user.findUnique({
     where: { id: uid },
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, role: true },
   });
+}
+
+/**
+ * For admin-only pages: returns the user if they're an ADMIN, otherwise
+ * redirects to the dashboard. (The proxy already ensures they're logged in.)
+ */
+export async function requireAdminPage() {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "ADMIN") redirect("/");
+  return user;
 }

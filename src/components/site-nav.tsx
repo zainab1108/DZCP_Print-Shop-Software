@@ -13,7 +13,13 @@ const links = [
   { href: "/pricing", label: "Pricing" },
 ];
 
-export function SiteNav({ userEmail }: { userEmail?: string }) {
+export function SiteNav({
+  userEmail,
+  isAdmin,
+}: {
+  userEmail?: string;
+  isAdmin?: boolean;
+}) {
   return (
     <header className="border-b bg-white dark:bg-zinc-900">
       <nav className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
@@ -29,11 +35,22 @@ export function SiteNav({ userEmail }: { userEmail?: string }) {
             {l.label}
           </Link>
         ))}
+        {isAdmin && (
+          <Link
+            href="/users"
+            className="text-muted-foreground hover:text-foreground text-sm font-medium"
+          >
+            Users
+          </Link>
+        )}
         <div className="ml-auto flex items-center gap-3">
           {userEmail && (
-            <span className="text-muted-foreground hidden text-xs sm:inline">
+            <Link
+              href="/account"
+              className="text-muted-foreground hover:text-foreground hidden text-xs sm:inline"
+            >
               {userEmail}
-            </span>
+            </Link>
           )}
           <LogoutButton />
         </div>

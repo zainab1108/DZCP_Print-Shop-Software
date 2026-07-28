@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
+import { requireAdminAction } from "@/lib/auth/require-admin-action";
 import { priceLine } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { calcInput, gridInput, markupRulesInput } from "@/lib/validation";
@@ -13,6 +14,8 @@ export async function saveGrid(
   gridId: string | null,
   raw: unknown,
 ): Promise<ActionResult> {
+  const guard = await requireAdminAction();
+  if (!guard.ok) return guard;
   const parsed = gridInput.safeParse(raw);
   if (!parsed.success) {
     return {
@@ -67,6 +70,8 @@ export async function saveGrid(
 }
 
 export async function deleteGrid(id: string): Promise<ActionResult> {
+  const guard = await requireAdminAction();
+  if (!guard.ok) return guard;
   try {
     await prisma.priceGrid.delete({ where: { id } });
     revalidatePath("/pricing");
@@ -81,6 +86,8 @@ export async function deleteGrid(id: string): Promise<ActionResult> {
 
 /** Replace the global markup table wholesale — it's small and edited as one. */
 export async function saveMarkupRules(raw: unknown): Promise<ActionResult> {
+  const guard = await requireAdminAction();
+  if (!guard.ok) return guard;
   const parsed = markupRulesInput.safeParse(raw);
   if (!parsed.success) {
     return {

@@ -222,3 +222,21 @@ export const shipmentInput = z.object({
 });
 
 export type ShipmentInput = z.infer<typeof shipmentInput>;
+
+const password = z.string().min(8, "Password must be at least 8 characters");
+
+export const newUserInput = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email"),
+  name: optionalTrimmed,
+  role: z.enum(["ADMIN", "STAFF"]),
+  password,
+});
+
+export type NewUserInput = z.infer<typeof newUserInput>;
+
+export const changePasswordInput = z.object({
+  currentPassword: z.string().min(1, "Enter your current password"),
+  newPassword: password,
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordInput>;
