@@ -32,14 +32,14 @@ export function StatTile({
     <Card
       className={href ? "hover:border-foreground/20 transition-colors" : ""}
     >
-      <CardContent className="space-y-1 py-4">
-        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+      <CardContent className="space-y-1.5 py-5">
+        <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
           {label}
         </p>
-        <p className={`text-2xl font-semibold tabular-nums ${toneClass}`}>
+        <p className={`text-3xl font-bold tabular-nums ${toneClass}`}>
           {value}
         </p>
-        {sub && <p className="text-muted-foreground text-xs">{sub}</p>}
+        {sub && <p className="text-muted-foreground text-sm">{sub}</p>}
       </CardContent>
     </Card>
   );
