@@ -328,10 +328,29 @@ model PriceGrid {
   tierLabel String  @default("Colors") // what the tier axis means, e.g. "Colors" or "Stitch count (k)"
   notes     String?
 
-  cells PriceCell[]
+  cells     PriceCell[]
+  setupFees SetupFeeTier[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// A one-time fee per tier (e.g. per screen/color), charged once per order —
+// NOT multiplied by piece quantity, unlike PriceCell. Applied as its own
+// separate line item, copied at creation time like everything else priced.
+model SetupFeeTier {
+  id     String    @id @default(cuid())
+  gridId String
+  grid   PriceGrid @relation(fields: [gridId], references: [id], onDelete: Cascade)
+
+  tier Int // matches PriceCell.tier, e.g. number of colors/screens
+  fee  Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gridId, tier])
+  @@index([gridId])
 }
 
 // One cell of a grid: from minQuantity pieces up to the next break, at this

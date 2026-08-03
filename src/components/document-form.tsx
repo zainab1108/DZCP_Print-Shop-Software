@@ -299,6 +299,19 @@ export function DocumentForm({
                                 unitPrice: v.unitPrice,
                               })
                             }
+                            onAddSetupFeeLine={(v) =>
+                              set({
+                                lineItems: [
+                                  ...values.lineItems,
+                                  {
+                                    description: v.description,
+                                    quantity: "1",
+                                    unitPrice: v.unitPrice,
+                                    taxable: true,
+                                  },
+                                ],
+                              })
+                            }
                           />
                         )}
                         <Button

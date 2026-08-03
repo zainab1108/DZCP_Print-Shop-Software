@@ -62,6 +62,26 @@ export function applyMarkup(
     .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
 }
 
+export interface SetupFeeTierInput {
+  tier: number;
+  fee: MoneyInput;
+}
+
+/**
+ * Resolve the one-time setup fee for a tier (e.g. number of colors/screens),
+ * if the grid defines one. Unlike resolveDecorationPrice this is an exact
+ * tier match, not a quantity-break lookup — setup fees don't scale with
+ * quantity, only with how many screens/colors the job needs. Returns null
+ * when no fee is configured for that tier (no setup fee charged).
+ */
+export function resolveSetupFee(
+  tiers: SetupFeeTierInput[],
+  tier: number,
+): Prisma.Decimal | null {
+  const match = tiers.find((t) => t.tier === tier);
+  return match ? new Decimal(match.fee) : null;
+}
+
 export type LinePriceResult =
   | {
       ok: true;

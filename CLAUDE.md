@@ -24,7 +24,7 @@ All eight stages are complete (tested library shown where money/logic is involve
 
 1. ✅ Customers / Quotes / Invoices — `src/lib/money.ts`
 2. ✅ Payments / Customer portal (`/portal/[token]`, no accounts) — `src/lib/payments.ts`
-3. ✅ Pricing engine (grids + garment markup, line calculator) — `src/lib/pricing.ts`
+3. ✅ Pricing engine (grids + garment markup + per-tier setup fees, line calculator) — `src/lib/pricing.ts`
 4. ✅ Art approval (versioned proofs on quotes, files under `uploads/`) — `src/lib/proofs.ts`
 5. ✅ Production management (jobs, kanban board at `/production`) — `src/lib/production.ts`
 6. ✅ Inventory / Purchasing (movement ledger, PO receiving) — `src/lib/inventory.ts`
@@ -37,7 +37,7 @@ All eight stages are complete (tested library shown where money/logic is involve
 - Carrier rate/label APIs (EasyPost/Shippo/UPS) — tracking is entered manually; CSV/deep-links cover the rest
 - QuickBooks/Xero OAuth sync — the `/api/export/accounting` CSV is the offline path
 
-**Known gap:** setup/screen fees are still manual line items, not a pricing primitive.
+**Setup/screen fees** are a pricing primitive (`SetupFeeTier`, one fee per grid tier). They are **one-time per order — never multiplied by piece quantity**, which is why they live in their own model rather than as another `PriceCell`, resolve by exact tier match (`resolveSetupFee`, not a quantity-break lookup), and land on their own quote line at qty 1 rather than folding into the per-piece unit price. Keep that separation if you touch this.
 
 ## Money = tests
 

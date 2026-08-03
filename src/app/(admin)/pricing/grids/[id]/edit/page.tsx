@@ -13,11 +13,15 @@ export default async function EditGridPage({
   const { id } = await params;
   const grid = await prisma.priceGrid.findUnique({
     where: { id },
-    include: { cells: true },
+    include: { cells: true, setupFees: true },
   });
   if (!grid) notFound();
 
-  const tierCount = Math.max(1, ...grid.cells.map((c) => c.tier));
+  const tierCount = Math.max(
+    1,
+    ...grid.cells.map((c) => c.tier),
+    ...grid.setupFees.map((f) => f.tier),
+  );
   const breaks = [...new Set(grid.cells.map((c) => c.minQuantity))].sort(
     (a, b) => a - b,
   );
@@ -36,6 +40,10 @@ export default async function EditGridPage({
         return cell ? cell.unitPrice.toString() : "";
       }),
     })),
+    setupFees: Array.from({ length: tierCount }, (_, i) => {
+      const fee = grid.setupFees.find((f) => f.tier === i + 1);
+      return fee ? fee.fee.toString() : "";
+    }),
   };
 
   return (

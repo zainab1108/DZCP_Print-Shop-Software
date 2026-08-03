@@ -38,10 +38,17 @@ export function PriceCalculator({
   grids,
   initialQuantity,
   onApply,
+  onAddSetupFeeLine,
 }: {
   grids: GridOption[];
   initialQuantity: string;
   onApply: (values: { quantity: string; unitPrice: string }) => void;
+  /** Setup fees are one-time per-order charges, so they go on their own
+   * line rather than into the current line's per-piece price. */
+  onAddSetupFeeLine?: (values: {
+    description: string;
+    unitPrice: string;
+  }) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [gridId, setGridId] = useState(grids[0]?.id ?? "");
@@ -180,12 +187,20 @@ export function PriceCalculator({
                     {formatMoney(result.unitPrice)}
                   </span>
                 </div>
+                {result.setupFee && (
+                  <div className="flex justify-between border-t pt-1 text-amber-700 dark:text-amber-400">
+                    <span>Setup fee (one-time)</span>
+                    <span className="tabular-nums">
+                      {formatMoney(result.setupFee)}
+                    </span>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-destructive text-sm">{result.error}</p>
             ))}
 
-          <DialogFooter>
+          <DialogFooter className="flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
@@ -193,6 +208,22 @@ export function PriceCalculator({
             >
               Cancel
             </Button>
+            {result?.ok && result.setupFee && onAddSetupFeeLine && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  if (result.ok && result.setupFee) {
+                    onAddSetupFeeLine({
+                      description: `Setup fee — ${tier} ${(grid?.tierLabel ?? "tier").toLowerCase()}`,
+                      unitPrice: trimZeros(result.setupFee),
+                    });
+                  }
+                }}
+              >
+                + Add setup fee line
+              </Button>
+            )}
             <Button
               type="button"
               disabled={!result?.ok}

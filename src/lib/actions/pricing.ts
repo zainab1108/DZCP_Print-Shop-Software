@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdminAction } from "@/lib/auth/require-admin-action";
-import { priceLine } from "@/lib/pricing";
+import { priceLine, resolveSetupFee } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { calcInput, gridInput, markupRulesInput } from "@/lib/validation";
 
@@ -23,7 +23,7 @@ export async function saveGrid(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  const { cells, ...fields } = parsed.data;
+  const { cells, setupFees, ...fields } = parsed.data;
 
   const seen = new Set<string>();
   for (const c of cells) {
@@ -37,10 +37,25 @@ export async function saveGrid(
     seen.add(key);
   }
 
+  const seenTiers = new Set<number>();
+  for (const f of setupFees) {
+    if (seenTiers.has(f.tier)) {
+      return {
+        ok: false,
+        error: `Duplicate setup fee for tier ${f.tier}`,
+      };
+    }
+    seenTiers.add(f.tier);
+  }
+
   const cellData = cells.map((c) => ({
     minQuantity: c.minQuantity,
     tier: c.tier,
     unitPrice: new Prisma.Decimal(c.unitPrice),
+  }));
+  const setupFeeData = setupFees.map((f) => ({
+    tier: f.tier,
+    fee: new Prisma.Decimal(f.fee),
   }));
 
   try {
@@ -48,14 +63,23 @@ export async function saveGrid(
     if (id) {
       await prisma.$transaction([
         prisma.priceCell.deleteMany({ where: { gridId: id } }),
+        prisma.setupFeeTier.deleteMany({ where: { gridId: id } }),
         prisma.priceGrid.update({
           where: { id },
-          data: { ...fields, cells: { create: cellData } },
+          data: {
+            ...fields,
+            cells: { create: cellData },
+            setupFees: { create: setupFeeData },
+          },
         }),
       ]);
     } else {
       const grid = await prisma.priceGrid.create({
-        data: { ...fields, cells: { create: cellData } },
+        data: {
+          ...fields,
+          cells: { create: cellData },
+          setupFees: { create: setupFeeData },
+        },
       });
       id = grid.id;
     }
@@ -131,6 +155,7 @@ export type CalcResult =
       decorationUnit: string;
       garmentUnit: string;
       unitPrice: string;
+      setupFee: string | null; // one-time, per order — not multiplied by quantity
     }
   | { ok: false; error: string };
 
@@ -148,7 +173,7 @@ export async function calculateLinePrice(raw: unknown): Promise<CalcResult> {
     const [grid, markupRules] = await Promise.all([
       prisma.priceGrid.findUnique({
         where: { id: parsed.data.gridId },
-        include: { cells: true },
+        include: { cells: true, setupFees: true },
       }),
       prisma.markupRule.findMany(),
     ]);
@@ -163,11 +188,14 @@ export async function calculateLinePrice(raw: unknown): Promise<CalcResult> {
     });
     if (!res.ok) return res;
 
+    const setupFee = resolveSetupFee(grid.setupFees, parsed.data.tier);
+
     return {
       ok: true,
       decorationUnit: res.decorationUnit.toFixed(4),
       garmentUnit: res.garmentUnit.toFixed(2),
       unitPrice: res.unitPrice.toFixed(4),
+      setupFee: setupFee ? setupFee.toFixed(2) : null,
     };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed" };

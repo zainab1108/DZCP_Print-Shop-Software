@@ -23,6 +23,7 @@ export interface GridEditorValues {
   notes: string;
   tierCount: number;
   rows: { minQuantity: string; prices: string[] }[]; // prices[i] = tier i+1
+  setupFees: string[]; // one-time fee per tier (index = tier - 1); blank = none
 }
 
 const starter: GridEditorValues = {
@@ -34,6 +35,7 @@ const starter: GridEditorValues = {
     minQuantity: String(q),
     prices: ["", "", ""],
   })),
+  setupFees: ["", "", ""],
 };
 
 export function GridEditor({
@@ -69,6 +71,7 @@ export function GridEditor({
       ...v,
       tierCount: v.tierCount + 1,
       rows: v.rows.map((r) => ({ ...r, prices: [...r.prices, ""] })),
+      setupFees: [...v.setupFees, ""],
     }));
   }
 
@@ -80,9 +83,16 @@ export function GridEditor({
             ...v,
             tierCount: v.tierCount - 1,
             rows: v.rows.map((r) => ({ ...r, prices: r.prices.slice(0, -1) })),
+            setupFees: v.setupFees.slice(0, -1),
           },
     );
   }
+
+  const setSetupFee = (tierIdx: number, fee: string) =>
+    setValues((v) => ({
+      ...v,
+      setupFees: v.setupFees.map((f, j) => (j === tierIdx ? fee : f)),
+    }));
 
   function submit() {
     setError(null);
@@ -96,12 +106,17 @@ export function GridEditor({
         }))
         .filter((c) => c.unitPrice !== ""),
     );
+    // Blank setup fee = no fee charged for that tier.
+    const setupFees = values.setupFees
+      .map((fee, i) => ({ tier: i + 1, fee: fee.trim() }))
+      .filter((f) => f.fee !== "");
     startTransition(async () => {
       const res = await saveGrid(gridId ?? null, {
         name: values.name,
         tierLabel: values.tierLabel,
         notes: values.notes,
         cells,
+        setupFees,
       });
       if (res.ok) router.push("/pricing");
       else setError(res.error);
@@ -253,6 +268,46 @@ export function GridEditor({
           </div>
           <p className="text-muted-foreground text-xs">
             Leave a cell blank if that combination isn’t offered.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>One-time setup fee — per order, not per piece</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {Array.from({ length: values.tierCount }, (_, i) => (
+                    <TableHead key={i} className="w-28 text-center">
+                      {values.tierLabel} {i + 1}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  {values.setupFees.map((fee, i) => (
+                    <TableCell key={i}>
+                      <Input
+                        inputMode="decimal"
+                        value={fee}
+                        onChange={(e) => setSetupFee(i, e.target.value)}
+                        placeholder="—"
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-muted-foreground text-xs">
+            E.g. a screen-setup charge per color. Leave blank for no setup fee
+            at that tier. Charged once per order — never multiplied by garment
+            quantity.
           </p>
         </CardContent>
       </Card>

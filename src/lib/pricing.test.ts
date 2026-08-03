@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { applyMarkup, priceLine, resolveDecorationPrice } from "./pricing";
+import {
+  applyMarkup,
+  priceLine,
+  resolveDecorationPrice,
+  resolveSetupFee,
+} from "./pricing";
 
 // A realistic screen print grid: breaks at 12/24/48/72/144, tiers = colors.
 const cells = [
@@ -123,5 +128,38 @@ describe("priceLine", () => {
       tier: 1,
     });
     expect(res.ok).toBe(false);
+  });
+});
+
+describe("resolveSetupFee", () => {
+  const setupFees = [
+    { tier: 1, fee: "20.00" },
+    { tier: 2, fee: "35.00" },
+    { tier: 3, fee: "0" }, // e.g. a promo: third color free
+  ];
+
+  it("finds the fee for an exact tier match", () => {
+    expect(resolveSetupFee(setupFees, 1)?.toString()).toBe("20");
+    expect(resolveSetupFee(setupFees, 2)?.toString()).toBe("35");
+  });
+
+  it("allows a zero fee (distinct from no fee)", () => {
+    expect(resolveSetupFee(setupFees, 3)?.toString()).toBe("0");
+  });
+
+  it("returns null when no fee is configured for that tier", () => {
+    expect(resolveSetupFee(setupFees, 4)).toBeNull();
+  });
+
+  it("returns null for an empty schedule", () => {
+    expect(resolveSetupFee([], 1)).toBeNull();
+  });
+
+  it("does not scale with quantity — it's a lookup, not a rate", () => {
+    // Same tier, called "twice" (e.g. once per order regardless of pieces)
+    // still resolves to the same flat fee.
+    const a = resolveSetupFee(setupFees, 2);
+    const b = resolveSetupFee(setupFees, 2);
+    expect(a?.toString()).toBe(b?.toString());
   });
 });

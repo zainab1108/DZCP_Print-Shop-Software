@@ -78,6 +78,11 @@ const price4dp = z
   .trim()
   .regex(/^\d{1,8}(\.\d{1,4})?$/, "Enter a price like 2.75");
 
+const fee2dp = z
+  .string()
+  .trim()
+  .regex(/^\d{1,8}(\.\d{1,2})?$/, "Enter a fee like 20.00");
+
 export const gridInput = z.object({
   name: z.string().trim().min(1, "Grid name is required"),
   tierLabel: z.string().trim().min(1).default("Colors"),
@@ -91,6 +96,16 @@ export const gridInput = z.object({
       }),
     )
     .min(1, "Add at least one price cell"),
+  // One-time, per-order fees keyed by tier (e.g. per color/screen).
+  // Optional — a grid with no setup fees charges none.
+  setupFees: z
+    .array(
+      z.object({
+        tier: z.number().int().min(1),
+        fee: fee2dp,
+      }),
+    )
+    .default([]),
 });
 
 export type GridInput = z.infer<typeof gridInput>;
