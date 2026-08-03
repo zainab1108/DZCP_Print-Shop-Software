@@ -47,7 +47,7 @@ export default async function POPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">{poNumber(po.number)}</h1>
+          <h1 className="text-3xl font-bold">{poNumber(po.number)}</h1>
           <StatusBadge status={po.status} />
         </div>
         <POActions id={po.id} status={po.status} />
@@ -86,7 +86,7 @@ export default async function POPage({
             <CardTitle className="text-base">Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tabular-nums">
+            <p className="text-3xl font-bold tabular-nums">
               {formatMoney(po.total)}
             </p>
           </CardContent>

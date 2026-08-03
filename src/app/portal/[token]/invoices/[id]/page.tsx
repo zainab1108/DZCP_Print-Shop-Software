@@ -65,7 +65,7 @@ export default async function PortalInvoicePage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-3xl font-bold">
             {invoiceNumber(invoice.number)}
           </h1>
           <StatusBadge status={invoice.status} />

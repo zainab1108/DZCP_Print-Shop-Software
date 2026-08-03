@@ -22,7 +22,7 @@ export default async function NewPOPage() {
   if (suppliers.length === 0) {
     return (
       <div className="mx-auto max-w-md space-y-4 text-center">
-        <h1 className="text-2xl font-semibold">New purchase order</h1>
+        <h1 className="text-3xl font-bold">New purchase order</h1>
         <p className="text-muted-foreground">
           Add a supplier first, then create a PO for them.
         </p>
@@ -35,7 +35,7 @@ export default async function NewPOPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-2xl font-semibold">New purchase order</h1>
+      <h1 className="text-3xl font-bold">New purchase order</h1>
       <POForm
         suppliers={suppliers}
         items={items.map((i) => ({

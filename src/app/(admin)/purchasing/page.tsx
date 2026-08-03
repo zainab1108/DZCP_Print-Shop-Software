@@ -24,7 +24,7 @@ export default async function PurchasingPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Purchasing</h1>
+        <h1 className="text-3xl font-bold">Purchasing</h1>
         <Button nativeButton={false} render={<Link href="/purchasing/new" />}>
           New purchase order
         </Button>

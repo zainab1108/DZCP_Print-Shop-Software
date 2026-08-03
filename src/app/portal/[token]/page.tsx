@@ -45,7 +45,7 @@ export default async function PortalHome({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{customer.name}</h1>
+        <h1 className="text-3xl font-bold">{customer.name}</h1>
         <p className="text-muted-foreground text-sm">
           Your quotes and invoices. Quotes awaiting your approval are marked
           “sent”.

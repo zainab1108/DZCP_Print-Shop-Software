@@ -61,7 +61,7 @@ export default async function JobPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">{jobNumber(job.number)}</h1>
+          <h1 className="text-3xl font-bold">{jobNumber(job.number)}</h1>
           <StatusBadge status={job.status} label={STATUS_LABELS[job.status]} />
           <span className="text-muted-foreground text-sm">
             {PRIORITY_LABELS[job.priority]} priority

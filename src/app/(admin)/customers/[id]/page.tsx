@@ -50,7 +50,7 @@ export default async function CustomerPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">{customer.name}</h1>
+          <h1 className="text-3xl font-bold">{customer.name}</h1>
           {customer.taxExempt && <Badge variant="outline">Tax exempt</Badge>}
           {customer.archived && <Badge variant="secondary">Archived</Badge>}
         </div>

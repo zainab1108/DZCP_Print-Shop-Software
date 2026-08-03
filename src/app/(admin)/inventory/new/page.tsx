@@ -11,7 +11,7 @@ export default async function NewItemPage() {
   });
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">New inventory item</h1>
+      <h1 className="text-3xl font-bold">New inventory item</h1>
       <InventoryItemForm suppliers={suppliers} />
     </div>
   );

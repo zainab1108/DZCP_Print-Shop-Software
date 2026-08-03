@@ -23,7 +23,7 @@ export default async function NewQuotePage({
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-2xl font-semibold">New quote</h1>
+      <h1 className="text-3xl font-bold">New quote</h1>
       <DocumentForm
         kind="quote"
         customers={customers}

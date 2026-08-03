@@ -35,7 +35,7 @@ export default async function EditInvoicePage({
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <h1 className="text-2xl font-semibold">
+      <h1 className="text-3xl font-bold">
         Edit {invoiceNumber(invoice.number)}
       </h1>
       <DocumentForm

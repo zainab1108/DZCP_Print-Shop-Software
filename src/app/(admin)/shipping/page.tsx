@@ -40,7 +40,7 @@ export default async function ShippingPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Shipping</h1>
+        <h1 className="text-3xl font-bold">Shipping</h1>
         <span className="text-muted-foreground text-sm">
           {open} open · {shipments.length} total
         </span>

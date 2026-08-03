@@ -30,7 +30,7 @@ export default async function CustomersPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-3xl font-bold">
           {showArchived ? "Archived customers" : "Customers"}
         </h1>
         <div className="flex gap-2">

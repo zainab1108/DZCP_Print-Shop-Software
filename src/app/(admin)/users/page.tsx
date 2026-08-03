@@ -15,7 +15,7 @@ export default async function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Staff & roles</h1>
+        <h1 className="text-3xl font-bold">Staff & roles</h1>
         <p className="text-muted-foreground text-sm">
           Admins manage users and pricing; staff can do everything else.
         </p>

@@ -61,7 +61,7 @@ export default async function ItemPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">{item.name}</h1>
+          <h1 className="text-3xl font-bold">{item.name}</h1>
           {isLowStock(item) && (
             <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
               Low stock
@@ -107,7 +107,7 @@ export default async function ItemPage({
             <CardTitle className="text-base">Stock</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            <p className="text-2xl font-semibold tabular-nums">
+            <p className="text-3xl font-bold tabular-nums">
               {item.quantityOnHand}
             </p>
             <p className="text-muted-foreground">

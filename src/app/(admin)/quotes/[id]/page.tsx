@@ -38,9 +38,7 @@ export default async function QuotePage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">
-              {quoteNumber(quote.number)}
-            </h1>
+            <h1 className="text-3xl font-bold">{quoteNumber(quote.number)}</h1>
             <StatusBadge status={quote.status} />
           </div>
           {quote.title && (
