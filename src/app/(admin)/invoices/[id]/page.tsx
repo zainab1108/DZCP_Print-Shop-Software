@@ -5,6 +5,7 @@ import { InvoiceActions } from "@/components/document-actions";
 import { DocumentLines } from "@/components/document-lines";
 import { PaymentsSection } from "@/components/payments-section";
 import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   formatDate,
@@ -58,7 +59,17 @@ export default async function InvoicePage({
             <p className="text-muted-foreground">{invoice.title}</p>
           )}
         </div>
-        <InvoiceActions id={invoice.id} status={invoice.status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<a href={`/api/invoices/${invoice.id}/pdf`} download />}
+          >
+            Download PDF
+          </Button>
+          <InvoiceActions id={invoice.id} status={invoice.status} />
+        </div>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-3">

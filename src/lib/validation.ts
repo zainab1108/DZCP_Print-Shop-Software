@@ -85,6 +85,15 @@ const fee2dp = z
 
 export const gridInput = z.object({
   name: z.string().trim().min(1, "Grid name is required"),
+  method: z
+    .enum([
+      "SCREEN_PRINT",
+      "DTF",
+      "EMBROIDERY",
+      "LASER_ENGRAVING",
+      "PROMOTIONAL",
+    ])
+    .default("SCREEN_PRINT"),
   tierLabel: z.string().trim().min(1).default("Colors"),
   notes: optionalTrimmed,
   cells: z

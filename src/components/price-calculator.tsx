@@ -20,12 +20,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { DecorationMethod } from "@/generated/prisma/client";
 import { calculateLinePrice, type CalcResult } from "@/lib/actions/pricing";
+import { METHOD_LABELS } from "@/lib/decoration-methods";
 import { formatMoney } from "@/lib/format";
 
 export interface GridOption {
   id: string;
   name: string;
+  method: DecorationMethod;
   tierLabel: string;
 }
 
@@ -109,7 +112,10 @@ export function PriceCalculator({
                 setGridId(v ?? "");
                 setResult(null);
               }}
-              items={grids.map((g) => ({ value: g.id, label: g.name }))}
+              items={grids.map((g) => ({
+                value: g.id,
+                label: `${METHOD_LABELS[g.method]} — ${g.name}`,
+              }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Pick a grid" />
@@ -117,7 +123,7 @@ export function PriceCalculator({
               <SelectContent>
                 {grids.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
-                    {g.name}
+                    {METHOD_LABELS[g.method]} — {g.name}
                   </SelectItem>
                 ))}
               </SelectContent>

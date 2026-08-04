@@ -28,6 +28,7 @@ export default async function EditGridPage({
 
   const initial: GridEditorValues = {
     name: grid.name,
+    method: grid.method,
     tierLabel: grid.tierLabel,
     notes: grid.notes ?? "",
     tierCount,

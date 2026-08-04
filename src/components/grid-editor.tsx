@@ -8,6 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -15,10 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import type { DecorationMethod } from "@/generated/prisma/client";
 import { saveGrid } from "@/lib/actions/pricing";
+import {
+  DECORATION_METHODS,
+  DEFAULT_TIER_LABELS,
+  METHOD_LABELS,
+} from "@/lib/decoration-methods";
 
 export interface GridEditorValues {
   name: string;
+  method: DecorationMethod;
   tierLabel: string;
   notes: string;
   tierCount: number;
@@ -28,6 +42,7 @@ export interface GridEditorValues {
 
 const starter: GridEditorValues = {
   name: "",
+  method: "SCREEN_PRINT",
   tierLabel: "Colors",
   notes: "",
   tierCount: 3,
@@ -113,6 +128,7 @@ export function GridEditor({
     startTransition(async () => {
       const res = await saveGrid(gridId ?? null, {
         name: values.name,
+        method: values.method,
         tierLabel: values.tierLabel,
         notes: values.notes,
         cells,
@@ -147,12 +163,46 @@ export function GridEditor({
             />
           </div>
           <div className="space-y-2">
+            <Label>Decoration method *</Label>
+            <Select
+              value={values.method}
+              onValueChange={(v) => {
+                const method = (v ?? "SCREEN_PRINT") as DecorationMethod;
+                // Only auto-fill the tier label while it's still the default
+                // for the previous method — never clobber a custom label.
+                const isDefaultLabel =
+                  values.tierLabel === DEFAULT_TIER_LABELS[values.method];
+                set({
+                  method,
+                  ...(isDefaultLabel
+                    ? { tierLabel: DEFAULT_TIER_LABELS[method] }
+                    : {}),
+                });
+              }}
+              items={DECORATION_METHODS.map((m) => ({
+                value: m,
+                label: METHOD_LABELS[m],
+              }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DECORATION_METHODS.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {METHOD_LABELS[m]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="grid-tier-label">Tier label</Label>
             <Input
               id="grid-tier-label"
               value={values.tierLabel}
               onChange={(e) => set({ tierLabel: e.target.value })}
-              placeholder="Colors"
+              placeholder={DEFAULT_TIER_LABELS[values.method]}
             />
           </div>
           <div className="space-y-2 sm:col-span-2">

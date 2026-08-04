@@ -29,7 +29,7 @@ export default async function EditInvoicePage({
     }),
     prisma.priceGrid.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, tierLabel: true },
+      select: { id: true, name: true, method: true, tierLabel: true },
     }),
   ]);
 

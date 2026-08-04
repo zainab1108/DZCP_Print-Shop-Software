@@ -322,10 +322,21 @@ model Proof {
 
 // ---------- Pricing ----------
 
+// What kind of decoration a price grid covers. A shop can have several grids
+// per method (e.g. "standard" and "rush" screen print).
+enum DecorationMethod {
+  SCREEN_PRINT
+  DTF
+  EMBROIDERY
+  LASER_ENGRAVING
+  PROMOTIONAL
+}
+
 model PriceGrid {
-  id        String  @id @default(cuid())
+  id        String           @id @default(cuid())
   name      String // e.g. "Screen print — standard"
-  tierLabel String  @default("Colors") // what the tier axis means, e.g. "Colors" or "Stitch count (k)"
+  method    DecorationMethod @default(SCREEN_PRINT)
+  tierLabel String           @default("Colors") // what the tier axis means, e.g. "Colors" or "Stitch count (k)"
   notes     String?
 
   cells     PriceCell[]
@@ -333,6 +344,8 @@ model PriceGrid {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([method])
 }
 
 // A one-time fee per tier (e.g. per screen/color), charged once per order —

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { DocumentLines } from "@/components/document-lines";
 import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -70,12 +71,27 @@ export default async function PortalInvoicePage({
           </h1>
           <StatusBadge status={invoice.status} />
         </div>
-        <Link
-          href={`/portal/${token}`}
-          className="text-muted-foreground text-sm hover:underline"
-        >
-          ← All documents
-        </Link>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={
+              <a
+                href={`/api/portal/${token}/invoices/${invoice.id}/pdf`}
+                download
+              />
+            }
+          >
+            Download PDF
+          </Button>
+          <Link
+            href={`/portal/${token}`}
+            className="text-muted-foreground text-sm hover:underline"
+          >
+            ← All documents
+          </Link>
+        </div>
       </div>
       {invoice.title && (
         <p className="text-muted-foreground">{invoice.title}</p>

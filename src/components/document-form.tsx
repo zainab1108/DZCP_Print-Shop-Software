@@ -28,6 +28,7 @@ import {
   PriceCalculator,
   type GridOption,
 } from "@/components/price-calculator";
+import { QuickCustomerDialog } from "@/components/quick-customer-dialog";
 import { createInvoice, updateInvoice } from "@/lib/actions/invoices";
 import { createQuote, updateQuote } from "@/lib/actions/quotes";
 import { formatMoney } from "@/lib/format";
@@ -84,6 +85,8 @@ export function DocumentForm({
   grids?: GridOption[];
 }) {
   const router = useRouter();
+  // Local copy so a customer created inline shows up without a page reload.
+  const [customerList, setCustomerList] = useState<CustomerOption[]>(customers);
   const [values, setValues] = useState<DocumentFormValues>(
     initial ?? {
       customerId: defaultCustomerId ?? "",
@@ -108,7 +111,7 @@ export function DocumentForm({
       lineItems: v.lineItems.map((l, j) => (j === i ? { ...l, ...patch } : l)),
     }));
 
-  const customer = customers.find((c) => c.id === values.customerId);
+  const customer = customerList.find((c) => c.id === values.customerId);
 
   // Display-only preview with float math; authoritative totals are computed
   // server-side with Decimal in src/lib/money.ts (tested).
@@ -159,26 +162,36 @@ export function DocumentForm({
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Customer *</Label>
-            <Select
-              value={values.customerId}
-              onValueChange={(v) => set({ customerId: v ?? "" })}
-              items={customers.map((c) => ({
-                value: c.id,
-                label: c.taxExempt ? `${c.name} (tax exempt)` : c.name,
-              }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Pick a customer" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                    {c.taxExempt ? " (tax exempt)" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select
+                value={values.customerId}
+                onValueChange={(v) => set({ customerId: v ?? "" })}
+                items={customerList.map((c) => ({
+                  value: c.id,
+                  label: c.taxExempt ? `${c.name} (tax exempt)` : c.name,
+                }))}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Pick a customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customerList.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                      {c.taxExempt ? " (tax exempt)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <QuickCustomerDialog
+                onCreated={(c) => {
+                  setCustomerList((list) =>
+                    [...list, c].sort((a, b) => a.name.localeCompare(b.name)),
+                  );
+                  set({ customerId: c.id });
+                }}
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="title">Job title</Label>
