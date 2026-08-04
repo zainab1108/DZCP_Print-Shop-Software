@@ -24,7 +24,7 @@ All eight stages are complete (tested library shown where money/logic is involve
 
 1. ✅ Customers / Quotes / Invoices — `src/lib/money.ts`
 2. ✅ Payments / Customer portal (`/portal/[token]`, no accounts) — `src/lib/payments.ts`
-3. ✅ Pricing engine (grids + garment markup + per-tier setup fees, line calculator) — `src/lib/pricing.ts`
+3. ✅ Pricing engine (grids + garment markup + per-tier setup fees, line calculator) — `src/lib/pricing.ts`. Grids are tagged with a `DecorationMethod` (screen print / DTF / embroidery / laser engraving / promotional — `src/lib/decoration-methods.ts`) and grouped by method on `/pricing` and in the line calculator's grid picker.
 4. ✅ Art approval (versioned proofs on quotes, files under `uploads/`) — `src/lib/proofs.ts`
 5. ✅ Production management (jobs, kanban board at `/production`) — `src/lib/production.ts`
 6. ✅ Inventory / Purchasing (movement ledger, PO receiving) — `src/lib/inventory.ts`
@@ -36,6 +36,10 @@ All eight stages are complete (tested library shown where money/logic is involve
 - Stripe online card payments (slot: portal invoice page)
 - Carrier rate/label APIs (EasyPost/Shippo/UPS) — tracking is entered manually; CSV/deep-links cover the rest
 - QuickBooks/Xero OAuth sync — the `/api/export/accounting` CSV is the offline path
+
+**Invoice PDF export** (`src/lib/invoice-pdf.tsx`, `@react-pdf/renderer`): `renderInvoicePdf()` builds a customer-facing PDF from `InvoicePdfData` — **internal notes are never included**, only customer-facing `terms` (see `src/lib/invoice-pdf-data.ts`'s `loadInvoicePdfData`, which deliberately doesn't select `notes`). Two download routes share that loader: `/api/invoices/[id]/pdf` (admin, gated by the normal session) and `/api/portal/[token]/invoices/[id]/pdf` (customer, verifies token ownership and excludes DRAFT invoices — 404 on any mismatch, never 403). The embedded logo is a pre-downscaled `public/logo-pdf.png` (256px), not the full-size nav logo — react-pdf embeds raw image bytes with no resizing, so using the original would bloat every PDF to 1.5MB+.
+
+**Quick customer creation** (`src/components/quick-customer-dialog.tsx`): the "+ New" button beside the customer picker on quote/invoice forms opens a dialog to create a customer inline via the existing `createCustomer` action, without losing the in-progress document form state. Its content is a `<div>`, not a `<form>` — the dialog is portaled but stays a React-tree descendant of `DocumentForm`'s own `<form>`, so a nested form would risk its submit bubbling into the outer one.
 
 **Setup/screen fees** are a pricing primitive (`SetupFeeTier`, one fee per grid tier). They are **one-time per order — never multiplied by piece quantity**, which is why they live in their own model rather than as another `PriceCell`, resolve by exact tier match (`resolveSetupFee`, not a quantity-break lookup), and land on their own quote line at qty 1 rather than folding into the per-piece unit price. Keep that separation if you touch this.
 
