@@ -37,6 +37,9 @@ yarn-error.log*
 # uploaded artwork proofs (user data, not source)
 /uploads
 
+# raw customer/financial exports — never committed
+/YoPrint Files
+
 # vercel
 .vercel
 
