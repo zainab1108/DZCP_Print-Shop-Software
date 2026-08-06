@@ -68,3 +68,9 @@ Anything touching money — pricing, tax, totals, discounts, payments — **must
 - Local Postgres runs from `~/.pgdata-printshop` (db `printshop`) and does not auto-start; start with:
   `export LC_ALL=en_US.UTF-8 && /usr/local/opt/postgresql@16/bin/pg_ctl -D ~/.pgdata-printshop -l ~/.pgdata-printshop/server.log start`
 - **After every migration, restart the dev server** — the long-running Next dev process caches the old Prisma client and errors with "Unknown field" until restarted (the build always uses the fresh client from disk).
+
+## Production
+
+- Hosted on a Hostinger VPS (Ubuntu 24.04) at `https://customdesk.io`, app code in `/var/www/dzcp` (deployed via `git pull` — GitHub deploy key, read-only), Node 22, Postgres 16, nginx reverse proxy with Let's Encrypt SSL (auto-renews via certbot), running under systemd as `dzcp.service`.
+- **To deploy**: `ssh dzcp-vps-deploy` then `/var/www/dzcp/scripts/deploy.sh` — pulls `main`, installs deps, runs `prisma migrate deploy`, builds, restarts the service, and health-checks it.
+- First admin login is created the same way as locally (`npm run create-admin`, operator sets the password directly on the server — never hand it to an assistant).
