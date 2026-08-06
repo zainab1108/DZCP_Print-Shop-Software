@@ -75,6 +75,59 @@ export function JobStatusControl({
   );
 }
 
+/**
+ * Same capability as JobStatusControl (one valid step at a time, via
+ * moveJob/canTransition) but as a dropdown — for embedding compactly on the
+ * sales order page rather than the full production kanban/detail view.
+ */
+export function JobStatusDropdown({
+  jobId,
+  status,
+}: {
+  jobId: string;
+  status: JobStatus;
+}) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const targets = BOARD_COLUMNS.filter((s) => canTransition(status, s));
+
+  function move(to: JobStatus | null) {
+    if (!to || to === status) return;
+    startTransition(async () => {
+      setError(null);
+      const res = await moveJob(jobId, to);
+      if (res.ok) router.refresh();
+      else setError(res.error);
+    });
+  }
+
+  const items = [
+    { value: status, label: STATUS_LABELS[status] },
+    ...targets.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+  ];
+
+  return (
+    <div className="space-y-1">
+      <Select value={status} onValueChange={move} items={items}>
+        <SelectTrigger className="w-44">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((it) => (
+            <SelectItem key={it.value} value={it.value}>
+              {it.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {pending && <p className="text-muted-foreground text-xs">Updating…</p>}
+      {error && <p className="text-destructive text-xs">{error}</p>}
+    </div>
+  );
+}
+
 export function JobScheduleForm({
   jobId,
   initial,
@@ -184,7 +237,7 @@ export function DeleteJobButton({ jobId }: { jobId: string }) {
       onClick={() => {
         if (
           confirm(
-            "Remove this job from production? The quote and invoice are unaffected.",
+            "Remove this job from production? The sales order and invoice are unaffected.",
           )
         ) {
           startTransition(async () => {

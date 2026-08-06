@@ -41,7 +41,7 @@ export default async function PortalInvoicePage({
     include: {
       lineItems: { orderBy: { sortOrder: "asc" } },
       payments: { orderBy: { receivedAt: "asc" } },
-      sourceQuote: {
+      sourceSalesOrder: {
         select: {
           job: { select: { shipments: { orderBy: { createdAt: "desc" } } } },
         },
@@ -58,8 +58,8 @@ export default async function PortalInvoicePage({
 
   const balance = invoice.total.sub(invoice.amountPaid);
   // Only surface shipments that have actually left the shop.
-  const shipments = (invoice.sourceQuote?.job?.shipments ?? []).filter((s) =>
-    isDispatched(s.status),
+  const shipments = (invoice.sourceSalesOrder?.job?.shipments ?? []).filter(
+    (s) => isDispatched(s.status),
   );
 
   return (

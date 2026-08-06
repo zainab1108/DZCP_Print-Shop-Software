@@ -26,7 +26,7 @@ All eight stages are complete (tested library shown where money/logic is involve
 2. ✅ Payments / Customer portal (`/portal/[token]`, no accounts) — `src/lib/payments.ts`
 3. ✅ Pricing engine (grids + garment markup + per-tier setup fees, line calculator) — `src/lib/pricing.ts`. Grids are tagged with a `DecorationMethod` (screen print / DTF / embroidery / laser engraving / promotional — `src/lib/decoration-methods.ts`) and grouped by method on `/pricing` and in the line calculator's grid picker.
 4. ✅ Art approval (versioned proofs on quotes, files under `uploads/`) — `src/lib/proofs.ts`
-5. ✅ Production management (jobs, kanban board at `/production`) — `src/lib/production.ts`
+5. ✅ Production management (jobs, kanban board at `/production`, attached to sales orders) — `src/lib/production.ts`
 6. ✅ Inventory / Purchasing (movement ledger, PO receiving) — `src/lib/inventory.ts`
 7. ✅ Shipping (shipments + tracking links, portal visibility) + accounting CSV export — `src/lib/shipping.ts`
 8. ✅ Dashboards & reporting (dashboard at `/`) — `src/lib/reporting.ts`
@@ -40,6 +40,8 @@ All eight stages are complete (tested library shown where money/logic is involve
 **Invoice PDF export** (`src/lib/invoice-pdf.tsx`, `@react-pdf/renderer`): `renderInvoicePdf()` builds a customer-facing PDF from `InvoicePdfData` — **internal notes are never included**, only customer-facing `terms` (see `src/lib/invoice-pdf-data.ts`'s `loadInvoicePdfData`, which deliberately doesn't select `notes`). Two download routes share that loader: `/api/invoices/[id]/pdf` (admin, gated by the normal session) and `/api/portal/[token]/invoices/[id]/pdf` (customer, verifies token ownership and excludes DRAFT invoices — 404 on any mismatch, never 403). The embedded logo is a pre-downscaled `public/logo-pdf.png` (256px), not the full-size nav logo — react-pdf embeds raw image bytes with no resizing, so using the original would bloat every PDF to 1.5MB+.
 
 **Quick customer creation** (`src/components/quick-customer-dialog.tsx`): the "+ New" button beside the customer picker on quote/invoice forms opens a dialog to create a customer inline via the existing `createCustomer` action, without losing the in-progress document form state. Its content is a `<div>`, not a `<form>` — the dialog is portaled but stays a React-tree descendant of `DocumentForm`'s own `<form>`, so a nested form would risk its submit bubbling into the outer one.
+
+**Sales orders** sit between Quote and Invoice: `Quote` (non-binding estimate) → `SalesOrder` (locked-in production blueprint, `src/lib/actions/sales-orders.ts`) → `Invoice`. Conversion goes through `convertQuoteToSalesOrder` and `convertSalesOrderToInvoice` (both mirror the old copy-everything-into-a-transaction pattern — customer, line items, and totals are copied field-for-field, never recomputed). A sales order can also convert **back** into a fresh quote via `convertSalesOrderToQuote`, but only while it's `DRAFT`/`CONFIRMED` and has no `Job` yet — once production has started or it's been invoiced, reversal is blocked. Production (`Job`) attaches to `SalesOrder`, not `Quote` — a job only exists once an order is actually confirmed. Proofs/art-approval still live on `Quote` (informational only; nothing gates job creation on proof approval), reachable from a job's page via `salesOrder.sourceQuote` when the order originated from one. `Invoice.sourceQuoteId` still exists as a legacy field (pre-sales-order invoices) but new invoices set `sourceSalesOrderId` instead.
 
 **Setup/screen fees** are a pricing primitive (`SetupFeeTier`, one fee per grid tier). They are **one-time per order — never multiplied by piece quantity**, which is why they live in their own model rather than as another `PriceCell`, resolve by exact tier match (`resolveSetupFee`, not a quantity-break lookup), and land on their own quote line at qty 1 rather than folding into the per-piece unit price. Keep that separation if you touch this.
 
@@ -59,7 +61,7 @@ Anything touching money — pricing, tax, totals, discounts, payments — **must
 
 - shadcn/ui here is built on **Base UI, not Radix**: use the `render` prop + `nativeButton={false}` for link-buttons, not `asChild`; `Select` takes an `items` prop.
 - Admin pages live in the `(admin)` route group (shared nav); the customer portal is under `/portal/[token]` with its own layout and no nav.
-- Documents copy their values at creation (quote→invoice totals, applied grid prices) so later edits to grids/pricing never rewrite history.
+- Documents copy their values at creation (quote→sales order→invoice totals, applied grid prices) so later edits to grids/pricing never rewrite history.
 - Prisma migrations are non-interactive here: `printf 'y\n' | script -q /dev/null npx prisma migrate dev --name <name>`.
 
 ## Environment notes

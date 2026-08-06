@@ -6,16 +6,16 @@ import { useState, useTransition } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import type { JobStatus } from "@/generated/prisma/client";
-import { createJobFromQuote } from "@/lib/actions/jobs";
+import { createJobFromSalesOrder } from "@/lib/actions/jobs";
 import { jobNumber } from "@/lib/format";
 import { STATUS_LABELS } from "@/lib/production";
 
 export function SendToProduction({
-  quoteId,
+  salesOrderId,
   producible,
   job,
 }: {
-  quoteId: string;
+  salesOrderId: string;
   producible: boolean;
   job: { id: string; number: number; status: JobStatus } | null;
 }) {
@@ -48,7 +48,7 @@ export function SendToProduction({
         onClick={() =>
           startTransition(async () => {
             setError(null);
-            const res = await createJobFromQuote(quoteId);
+            const res = await createJobFromSalesOrder(salesOrderId);
             if (res.ok) router.push(`/production/${res.id}`);
             else setError(res.error);
           })

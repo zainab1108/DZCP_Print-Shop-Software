@@ -43,6 +43,10 @@ export function quoteNumber(n: number): string {
   return `Q-${n}`;
 }
 
+export function salesOrderNumber(n: number): string {
+  return `SO-${n}`;
+}
+
 export function invoiceNumber(n: number): string {
   return `INV-${n}`;
 }

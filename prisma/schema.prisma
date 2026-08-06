@@ -23,10 +23,11 @@ model Customer {
   // revocable. The token is the whole credential — no accounts/passwords.
   portalToken String? @unique
 
-  contacts  Contact[]
-  addresses Address[]
-  quotes    Quote[]
-  invoices  Invoice[]
+  contacts    Contact[]
+  addresses   Address[]
+  quotes      Quote[]
+  salesOrders SalesOrder[]
+  invoices    Invoice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,7 +85,7 @@ enum QuoteStatus {
   APPROVED
   DECLINED
   EXPIRED
-  CONVERTED // turned into an invoice
+  CONVERTED // turned into a sales order
 }
 
 model Quote {
@@ -108,10 +109,10 @@ model Quote {
   notes String? // internal
   terms String? // shown on the quote
 
-  lineItems QuoteLineItem[]
-  invoices  Invoice[] // invoices created from this quote
-  proofs    Proof[]
-  job       Job? // production job, once the quote goes into production
+  lineItems   QuoteLineItem[]
+  salesOrders SalesOrder[] // sales orders created from this quote
+  invoices    Invoice[] // legacy: invoices converted directly from a quote, pre-sales-order
+  proofs      Proof[] // art approval happens at the quote stage
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -138,6 +139,70 @@ model QuoteLineItem {
   @@index([quoteId])
 }
 
+// ---------- Sales orders ----------
+
+enum SalesOrderStatus {
+  DRAFT // being entered, not yet locked in
+  CONFIRMED // locked in — specs/qty/price agreed, production can start
+  INVOICED // turned into an invoice
+  CANCELLED // fell through, or reverted back to a quote
+}
+
+// The locked-in production blueprint for a confirmed order — sits between
+// Quote (a non-binding estimate) and Invoice (the bill). Line items, prices,
+// and quantities are copied in at creation time, same as every other
+// document here, so later edits to a quote never rewrite an existing order.
+model SalesOrder {
+  id         String   @id @default(cuid())
+  number     Int      @unique @default(autoincrement()) // displayed as SO-<number>
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  sourceQuoteId String? // set when converted from a quote
+  sourceQuote   Quote?  @relation(fields: [sourceQuoteId], references: [id])
+
+  status    SalesOrderStatus @default(DRAFT)
+  title     String?
+  issueDate DateTime         @default(now())
+  dueDate   DateTime? // production/ship-by date
+
+  subtotal  Decimal @default(0) @db.Decimal(12, 2)
+  taxRate   Decimal @default(0) @db.Decimal(6, 5)
+  taxAmount Decimal @default(0) @db.Decimal(12, 2)
+  total     Decimal @default(0) @db.Decimal(12, 2)
+
+  notes String? // internal
+  terms String? // shown on the order
+
+  lineItems SalesOrderLineItem[]
+  invoices  Invoice[] // invoices created from this sales order
+  job       Job? // production job, once the order goes into production
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model SalesOrderLineItem {
+  id           String     @id @default(cuid())
+  salesOrderId String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @default(0) @db.Decimal(12, 4)
+  taxable     Boolean @default(true)
+  lineTotal   Decimal @default(0) @db.Decimal(12, 2)
+  sortOrder   Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([salesOrderId])
+}
+
 // ---------- Production ----------
 
 // Ordered production stages for screen printing. ON_HOLD is a parking state
@@ -162,13 +227,14 @@ enum JobPriority {
   RUSH
 }
 
-// A production job: the physical work order for an approved quote. One job
-// per quote (the quote holds the line items to make and the approved proofs).
+// A production job: the physical work order for a confirmed sales order.
+// One job per sales order (the sales order holds the line items to make;
+// approved proofs live on the originating quote).
 model Job {
-  id      String @id @default(cuid())
-  number  Int    @unique @default(autoincrement()) // displayed as JOB-<number>
-  quoteId String @unique
-  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  id           String     @id @default(cuid())
+  number       Int        @unique @default(autoincrement()) // displayed as JOB-<number>
+  salesOrderId String     @unique
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
 
   status   JobStatus   @default(QUEUED)
   priority JobPriority @default(NORMAL)
@@ -223,11 +289,11 @@ model Shipment {
   weightOz       Int? // package weight in ounces
 
   // Ship-to snapshot so the record is stable if the customer address changes.
-  shipToName String?
-  shipToLine1 String?
-  shipToLine2 String?
-  shipToCity  String?
-  shipToState String?
+  shipToName       String?
+  shipToLine1      String?
+  shipToLine2      String?
+  shipToCity       String?
+  shipToState      String?
   shipToPostalCode String?
   shipToCountry    String?
 
@@ -259,8 +325,11 @@ model Invoice {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id])
 
-  sourceQuoteId String? // set when the invoice was converted from a quote
+  sourceQuoteId String? // legacy: set when converted directly from a quote, pre-sales-order
   sourceQuote   Quote?  @relation(fields: [sourceQuoteId], references: [id])
+
+  sourceSalesOrderId String? // set when the invoice was converted from a sales order
+  sourceSalesOrder   SalesOrder? @relation(fields: [sourceSalesOrderId], references: [id])
 
   status    InvoiceStatus @default(DRAFT)
   title     String?
@@ -440,13 +509,13 @@ model InvoiceLineItem {
 // ---------- Inventory & purchasing ----------
 
 model Supplier {
-  id      String  @id @default(cuid())
-  name    String
-  email   String?
-  phone   String?
-  website String?
-  account String? // our account number with this supplier
-  notes   String?
+  id       String  @id @default(cuid())
+  name     String
+  email    String?
+  phone    String?
+  website  String?
+  account  String? // our account number with this supplier
+  notes    String?
   archived Boolean @default(false)
 
   items          InventoryItem[]
@@ -459,14 +528,14 @@ model Supplier {
 }
 
 model InventoryItem {
-  id          String  @id @default(cuid())
-  sku         String  @unique
-  name        String // e.g. "Gildan 5000 - Black - L"
-  unit        String  @default("each") // each, case, roll, etc.
+  id             String  @id @default(cuid())
+  sku            String  @unique
+  name           String // e.g. "Gildan 5000 - Black - L"
+  unit           String  @default("each") // each, case, roll, etc.
   // On-hand is a cached column kept in sync via StockMovement rows in a
   // transaction; movements are the audit trail (like invoice.amountPaid).
-  quantityOnHand Int    @default(0)
-  reorderPoint   Int    @default(0)
+  quantityOnHand Int     @default(0)
+  reorderPoint   Int     @default(0)
   unitCost       Decimal @default(0) @db.Decimal(12, 4) // last known cost per unit
   archived       Boolean @default(false)
 
@@ -500,7 +569,7 @@ model StockMovement {
 
   // Optional provenance links.
   jobId String?
-  job   Job?    @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  job   Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
   poId  String?
   po    PurchaseOrder? @relation(fields: [poId], references: [id], onDelete: SetNull)
 
@@ -543,9 +612,9 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  id     String        @id @default(cuid())
-  poId   String
-  po     PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  id   String        @id @default(cuid())
+  poId String
+  po   PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
 
   itemId String?
   item   InventoryItem? @relation(fields: [itemId], references: [id])
@@ -578,11 +647,11 @@ enum Role {
 // (the operator supplies their own password), the rest via the /users page.
 // The customer portal is separate and uses per-customer tokens, not Users.
 model User {
-  id           String @id @default(cuid())
-  email        String @unique
+  id           String  @id @default(cuid())
+  email        String  @unique
   passwordHash String
   name         String?
-  role         Role   @default(STAFF)
+  role         Role    @default(STAFF)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

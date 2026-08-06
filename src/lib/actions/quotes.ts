@@ -135,7 +135,7 @@ export async function setQuoteStatus(
     if (quote.status === "CONVERTED") {
       return {
         ok: false,
-        error: "This quote was already converted to an invoice",
+        error: "This quote was already converted to a sales order",
       };
     }
     await prisma.quote.update({ where: { id }, data: { status } });
@@ -167,8 +167,8 @@ export async function deleteQuote(id: string): Promise<ActionResult> {
   }
 }
 
-/** Copy an approved quote into a new draft invoice and mark the quote converted. */
-export async function convertQuoteToInvoice(id: string): Promise<ActionResult> {
+/** Copy an approved quote into a new confirmed sales order and mark the quote converted. */
+export async function convertQuoteToSalesOrder(id: string): Promise<ActionResult> {
   try {
     const quote = await prisma.quote.findUnique({
       where: { id },
@@ -182,16 +182,13 @@ export async function convertQuoteToInvoice(id: string): Promise<ActionResult> {
       return { ok: false, error: "A declined quote can't be converted" };
     }
 
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
-
-    const invoice = await prisma.$transaction(async (tx) => {
-      const inv = await tx.invoice.create({
+    const salesOrder = await prisma.$transaction(async (tx) => {
+      const so = await tx.salesOrder.create({
         data: {
           customerId: quote.customerId,
           sourceQuoteId: quote.id,
+          status: "CONFIRMED",
           title: quote.title,
-          dueDate,
           taxRate: quote.taxRate,
           subtotal: quote.subtotal,
           taxAmount: quote.taxAmount,
@@ -211,12 +208,12 @@ export async function convertQuoteToInvoice(id: string): Promise<ActionResult> {
         },
       });
       await tx.quote.update({ where: { id }, data: { status: "CONVERTED" } });
-      return inv;
+      return so;
     });
 
     revalidateQuote(id, quote.customerId);
-    revalidatePath("/invoices");
-    return { ok: true, id: invoice.id };
+    revalidatePath("/sales-orders");
+    return { ok: true, id: salesOrder.id };
   } catch (e) {
     return {
       ok: false,

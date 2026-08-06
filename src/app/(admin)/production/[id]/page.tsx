@@ -23,6 +23,7 @@ import {
   invoiceNumber,
   jobNumber,
   quoteNumber,
+  salesOrderNumber,
 } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import { PRIORITY_LABELS, STATUS_LABELS } from "@/lib/production";
@@ -38,14 +39,20 @@ export default async function JobPage({
   const job = await prisma.job.findUnique({
     where: { id },
     include: {
-      quote: {
+      salesOrder: {
         include: {
           customer: { select: { id: true, name: true } },
           lineItems: { orderBy: { sortOrder: "asc" } },
           invoices: { select: { id: true, number: true } },
-          proofs: {
-            orderBy: { version: "desc" },
-            select: { id: true, version: true, status: true },
+          sourceQuote: {
+            select: {
+              id: true,
+              number: true,
+              proofs: {
+                orderBy: { version: "desc" },
+                select: { id: true, version: true, status: true },
+              },
+            },
           },
         },
       },
@@ -54,8 +61,9 @@ export default async function JobPage({
   });
   if (!job) notFound();
 
-  const { quote } = job;
-  const approvedProof = quote.proofs.find((p) => p.status === "APPROVED");
+  const { salesOrder } = job;
+  const proofs = salesOrder.sourceQuote?.proofs ?? [];
+  const approvedProof = proofs.find((p) => p.status === "APPROVED");
 
   return (
     <div className="space-y-6">
@@ -78,25 +86,25 @@ export default async function JobPage({
           <CardContent className="space-y-1 text-sm">
             <p>
               <Link
-                href={`/customers/${quote.customer.id}`}
+                href={`/customers/${salesOrder.customer.id}`}
                 className="font-medium hover:underline"
               >
-                {quote.customer.name}
+                {salesOrder.customer.name}
               </Link>
             </p>
-            {quote.title && (
-              <p className="text-muted-foreground">{quote.title}</p>
+            {salesOrder.title && (
+              <p className="text-muted-foreground">{salesOrder.title}</p>
             )}
             <p className="pt-1">
-              Quote{" "}
+              Sales order{" "}
               <Link
-                href={`/quotes/${quote.id}`}
+                href={`/sales-orders/${salesOrder.id}`}
                 className="font-medium hover:underline"
               >
-                {quoteNumber(quote.number)}
+                {salesOrderNumber(salesOrder.number)}
               </Link>
             </p>
-            {quote.invoices.map((inv) => (
+            {salesOrder.invoices.map((inv) => (
               <p key={inv.id}>
                 Invoice{" "}
                 <Link
@@ -115,7 +123,11 @@ export default async function JobPage({
             <CardTitle className="text-base">Artwork</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
-            {quote.proofs.length === 0 ? (
+            {!salesOrder.sourceQuote ? (
+              <p className="text-muted-foreground">
+                This order wasn&apos;t created from a quote — no proofs.
+              </p>
+            ) : proofs.length === 0 ? (
               <p className="text-muted-foreground">No proofs on the quote.</p>
             ) : (
               <>
@@ -129,10 +141,10 @@ export default async function JobPage({
                   </p>
                 )}
                 <Link
-                  href={`/quotes/${quote.id}`}
+                  href={`/quotes/${salesOrder.sourceQuote.id}`}
                   className="text-muted-foreground hover:underline"
                 >
-                  View proofs on the quote →
+                  View proofs on {quoteNumber(salesOrder.sourceQuote.number)} →
                 </Link>
               </>
             )}
@@ -167,7 +179,7 @@ export default async function JobPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {quote.lineItems.map((l) => (
+              {salesOrder.lineItems.map((l) => (
                 <TableRow key={l.id}>
                   <TableCell>{l.description}</TableCell>
                   <TableCell className="text-right tabular-nums">

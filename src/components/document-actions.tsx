@@ -7,10 +7,16 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { deleteInvoice, setInvoiceStatus } from "@/lib/actions/invoices";
 import {
-  convertQuoteToInvoice,
+  convertQuoteToSalesOrder,
   deleteQuote,
   setQuoteStatus,
 } from "@/lib/actions/quotes";
+import {
+  convertSalesOrderToInvoice,
+  convertSalesOrderToQuote,
+  deleteSalesOrder,
+  setSalesOrderStatus,
+} from "@/lib/actions/sales-orders";
 
 type Result = { ok: true; id: string } | { ok: false; error: string };
 
@@ -78,12 +84,12 @@ export function QuoteActions({ id, status }: { id: string; status: string }) {
             disabled={pending}
             onClick={() =>
               run(
-                () => convertQuoteToInvoice(id),
-                (invoiceId) => router.push(`/invoices/${invoiceId}`),
+                () => convertQuoteToSalesOrder(id),
+                (salesOrderId) => router.push(`/sales-orders/${salesOrderId}`),
               )
             }
           >
-            Convert to invoice
+            Convert to sales order
           </Button>
         )}
         {status === "DRAFT" && (
@@ -96,6 +102,117 @@ export function QuoteActions({ id, status }: { id: string; status: string }) {
                 run(
                   () => deleteQuote(id),
                   () => router.push("/quotes"),
+                );
+              }
+            }}
+          >
+            Delete
+          </Button>
+        )}
+      </div>
+      {error && <p className="text-destructive text-sm">{error}</p>}
+    </div>
+  );
+}
+
+export function SalesOrderActions({
+  id,
+  status,
+}: {
+  id: string;
+  status: string;
+}) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const run = (fn: () => Promise<Result>, after?: (id: string) => void) =>
+    startTransition(async () => {
+      setError(null);
+      const res = await fn();
+      if (!res.ok) setError(res.error);
+      else if (after) after(res.id);
+      else router.refresh();
+    });
+
+  const editable = status === "DRAFT" || status === "CONFIRMED";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {editable && (
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href={`/sales-orders/${id}/edit`} />}
+          >
+            Edit
+          </Button>
+        )}
+        {status === "DRAFT" && (
+          <Button
+            size="sm"
+            disabled={pending}
+            onClick={() => run(() => setSalesOrderStatus(id, "CONFIRMED"))}
+          >
+            Confirm
+          </Button>
+        )}
+        {status === "CONFIRMED" && (
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={pending}
+            onClick={() =>
+              run(
+                () => convertSalesOrderToInvoice(id),
+                (invoiceId) => router.push(`/invoices/${invoiceId}`),
+              )
+            }
+          >
+            Convert to invoice
+          </Button>
+        )}
+        {editable && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={() =>
+              run(
+                () => convertSalesOrderToQuote(id),
+                (quoteId) => router.push(`/quotes/${quoteId}`),
+              )
+            }
+          >
+            Convert back to quote
+          </Button>
+        )}
+        {editable && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={() => {
+              if (confirm("Cancel this sales order?")) {
+                run(() => setSalesOrderStatus(id, "CANCELLED"));
+              }
+            }}
+          >
+            Cancel
+          </Button>
+        )}
+        {status === "DRAFT" && (
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={pending}
+            onClick={() => {
+              if (confirm("Delete this draft sales order?")) {
+                run(
+                  () => deleteSalesOrder(id),
+                  () => router.push("/sales-orders"),
                 );
               }
             }}

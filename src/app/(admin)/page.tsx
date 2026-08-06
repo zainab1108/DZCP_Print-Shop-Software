@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  ClipboardList,
   Factory,
   FileText,
   Receipt,
@@ -109,6 +110,13 @@ export default async function Home() {
           label="Quotes"
           description="Create or update quotes"
           color="bg-indigo-500"
+        />
+        <NavTile
+          href="/sales-orders"
+          icon={ClipboardList}
+          label="Sales Orders"
+          description="Confirmed orders, ready to produce"
+          color="bg-violet-500"
         />
         <NavTile
           href="/invoices"

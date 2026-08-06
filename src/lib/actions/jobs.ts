@@ -9,28 +9,28 @@ import { jobScheduleInput } from "@/lib/validation";
 
 import type { ActionResult } from "./customers";
 
-// A quote must be at least this far along before it can go into production.
-const PRODUCIBLE = ["APPROVED", "CONVERTED"];
+// A sales order must be at least this far along before it can go into production.
+const PRODUCIBLE = ["CONFIRMED", "INVOICED"];
 
-/** Create the production job for an approved/converted quote (one per quote). */
-export async function createJobFromQuote(
-  quoteId: string,
+/** Create the production job for a confirmed sales order (one per order). */
+export async function createJobFromSalesOrder(
+  salesOrderId: string,
 ): Promise<ActionResult> {
   try {
-    const quote = await prisma.quote.findUnique({
-      where: { id: quoteId },
+    const salesOrder = await prisma.salesOrder.findUnique({
+      where: { id: salesOrderId },
       include: { job: { select: { id: true } } },
     });
-    if (!quote) return { ok: false, error: "Quote not found" };
-    if (quote.job) return { ok: true, id: quote.job.id }; // already in production
-    if (!PRODUCIBLE.includes(quote.status)) {
+    if (!salesOrder) return { ok: false, error: "Sales order not found" };
+    if (salesOrder.job) return { ok: true, id: salesOrder.job.id }; // already in production
+    if (!PRODUCIBLE.includes(salesOrder.status)) {
       return {
         ok: false,
-        error: "Only approved quotes can go into production",
+        error: "Only confirmed sales orders can go into production",
       };
     }
 
-    const job = await prisma.job.create({ data: { quoteId } });
+    const job = await prisma.job.create({ data: { salesOrderId } });
     revalidateJob(job.id);
     return { ok: true, id: job.id };
   } catch (e) {
@@ -104,8 +104,8 @@ export async function deleteJob(jobId: string): Promise<ActionResult> {
     if (!job) return { ok: false, error: "Job not found" };
     await prisma.job.delete({ where: { id: jobId } });
     revalidatePath("/production");
-    revalidatePath(`/quotes/${job.quoteId}`);
-    return { ok: true, id: job.quoteId };
+    revalidatePath(`/sales-orders/${job.salesOrderId}`);
+    return { ok: true, id: job.salesOrderId };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Failed" };
   }
@@ -114,5 +114,5 @@ export async function deleteJob(jobId: string): Promise<ActionResult> {
 function revalidateJob(jobId: string) {
   revalidatePath("/production");
   revalidatePath(`/production/${jobId}`);
-  revalidatePath("/quotes");
+  revalidatePath("/sales-orders");
 }

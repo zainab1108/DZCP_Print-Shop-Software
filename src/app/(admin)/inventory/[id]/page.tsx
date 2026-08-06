@@ -54,7 +54,7 @@ export default async function ItemPage({
     where: { status: { not: "SHIPPED" } },
     orderBy: { number: "desc" },
     take: 50,
-    include: { quote: { select: { title: true } } },
+    include: { salesOrder: { select: { title: true } } },
   });
 
   return (
@@ -127,7 +127,7 @@ export default async function ItemPage({
             itemId={item.id}
             jobs={jobs.map((j) => ({
               id: j.id,
-              label: `${jobNumber(j.number)}${j.quote.title ? ` — ${j.quote.title}` : ""}`,
+              label: `${jobNumber(j.number)}${j.salesOrder.title ? ` — ${j.salesOrder.title}` : ""}`,
             }))}
           />
         </CardContent>

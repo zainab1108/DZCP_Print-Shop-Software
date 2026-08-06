@@ -4,10 +4,9 @@ import { notFound } from "next/navigation";
 import { QuoteActions } from "@/components/document-actions";
 import { DocumentLines } from "@/components/document-lines";
 import { ProofsSection } from "@/components/proofs-section";
-import { SendToProduction } from "@/components/send-to-production";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, invoiceNumber, quoteNumber } from "@/lib/format";
+import { formatDate, quoteNumber, salesOrderNumber } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -23,15 +22,11 @@ export default async function QuotePage({
     include: {
       customer: true,
       lineItems: { orderBy: { sortOrder: "asc" } },
-      invoices: { select: { id: true, number: true } },
+      salesOrders: { select: { id: true, number: true } },
       proofs: { orderBy: { version: "asc" } },
-      job: { select: { id: true, number: true, status: true } },
     },
   });
   if (!quote) notFound();
-
-  const producible =
-    quote.status === "APPROVED" || quote.status === "CONVERTED";
 
   return (
     <div className="space-y-6">
@@ -47,11 +42,6 @@ export default async function QuotePage({
         </div>
         <div className="flex flex-col items-end gap-2">
           <QuoteActions id={quote.id} status={quote.status} />
-          <SendToProduction
-            quoteId={quote.id}
-            producible={producible}
-            job={quote.job}
-          />
         </div>
       </div>
 
@@ -83,19 +73,19 @@ export default async function QuotePage({
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Linked invoices</CardTitle>
+            <CardTitle className="text-base">Sales orders</CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
-            {quote.invoices.length === 0 ? (
+            {quote.salesOrders.length === 0 ? (
               <p className="text-muted-foreground">None yet.</p>
             ) : (
-              quote.invoices.map((inv) => (
+              quote.salesOrders.map((so) => (
                 <Link
-                  key={inv.id}
-                  href={`/invoices/${inv.id}`}
+                  key={so.id}
+                  href={`/sales-orders/${so.id}`}
                   className="block font-medium hover:underline"
                 >
-                  {invoiceNumber(inv.number)}
+                  {salesOrderNumber(so.number)}
                 </Link>
               ))
             )}

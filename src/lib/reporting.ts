@@ -141,6 +141,7 @@ export interface QuoteConversion {
 /**
  * Quote win rate. Only decided quotes count: won = APPROVED or CONVERTED,
  * lost = DECLINED or EXPIRED. DRAFT and SENT are still pending and excluded.
+ * CONVERTED means the quote became a sales order (not directly an invoice).
  */
 export function quoteConversion(
   quotes: { status: QuoteStatus }[],

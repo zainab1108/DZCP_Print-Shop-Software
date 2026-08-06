@@ -24,7 +24,7 @@ export default async function ProductionPage() {
   const jobs = await prisma.job.findMany({
     orderBy: [{ priority: "desc" }, { dueDate: "asc" }, { number: "asc" }],
     include: {
-      quote: {
+      salesOrder: {
         select: {
           number: true,
           title: true,
@@ -49,7 +49,8 @@ export default async function ProductionPage() {
 
       {jobs.length === 0 ? (
         <p className="text-muted-foreground">
-          No jobs yet. Send an approved quote into production from its page.
+          No jobs yet. Send a confirmed sales order into production from its
+          page.
         </p>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-4">
@@ -80,10 +81,10 @@ export default async function ProductionPage() {
                           {PRIORITY_LABELS[job.priority]}
                         </span>
                       </div>
-                      <p className="text-sm">{job.quote.customer.name}</p>
-                      {job.quote.title && (
+                      <p className="text-sm">{job.salesOrder.customer.name}</p>
+                      {job.salesOrder.title && (
                         <p className="text-muted-foreground text-xs">
-                          {job.quote.title}
+                          {job.salesOrder.title}
                         </p>
                       )}
                       {job.dueDate && (

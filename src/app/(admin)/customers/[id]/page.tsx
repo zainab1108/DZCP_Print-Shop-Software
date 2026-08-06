@@ -21,6 +21,7 @@ import {
   formatMoney,
   invoiceNumber,
   quoteNumber,
+  salesOrderNumber,
 } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 import type { Address } from "@/generated/prisma/client";
@@ -38,6 +39,7 @@ export default async function CustomerPage({
     include: {
       addresses: true,
       quotes: { orderBy: { createdAt: "desc" }, take: 10 },
+      salesOrders: { orderBy: { createdAt: "desc" }, take: 10 },
       invoices: { orderBy: { createdAt: "desc" }, take: 10 },
     },
   });
@@ -74,6 +76,14 @@ export default async function CustomerPage({
             render={<Link href={`/quotes/new?customerId=${id}`} />}
           >
             New quote
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            nativeButton={false}
+            render={<Link href={`/sales-orders/new?customerId=${id}`} />}
+          >
+            New sales order
           </Button>
           <Button
             size="sm"
@@ -147,6 +157,53 @@ export default async function CustomerPage({
                     <TableCell>{formatDate(q.issueDate)}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatMoney(q.total)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Recent sales orders</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {customer.salesOrders.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No sales orders yet.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Number</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Issued</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customer.salesOrders.map((so) => (
+                  <TableRow key={so.id}>
+                    <TableCell>
+                      <Link
+                        href={`/sales-orders/${so.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {salesOrderNumber(so.number)}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{so.title ?? "—"}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={so.status} />
+                    </TableCell>
+                    <TableCell>{formatDate(so.issueDate)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatMoney(so.total)}
                     </TableCell>
                   </TableRow>
                 ))}

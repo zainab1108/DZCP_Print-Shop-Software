@@ -8,6 +8,10 @@ const styles: Record<string, string> = {
   EXPIRED: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100",
   CONVERTED:
     "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100",
+  CONFIRMED:
+    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+  INVOICED:
+    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100",
   PARTIALLY_PAID:
     "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100",
   PAID: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",

@@ -31,7 +31,20 @@ import {
 import { QuickCustomerDialog } from "@/components/quick-customer-dialog";
 import { createInvoice, updateInvoice } from "@/lib/actions/invoices";
 import { createQuote, updateQuote } from "@/lib/actions/quotes";
+import { createSalesOrder, updateSalesOrder } from "@/lib/actions/sales-orders";
 import { formatMoney } from "@/lib/format";
+
+const KIND_LABEL = {
+  quote: "quote",
+  invoice: "invoice",
+  salesOrder: "sales order",
+} as const;
+
+const KIND_ROUTE = {
+  quote: "quotes",
+  invoice: "invoices",
+  salesOrder: "sales-orders",
+} as const;
 
 export interface LineValues {
   description: string;
@@ -77,7 +90,7 @@ export function DocumentForm({
   defaultCustomerId,
   grids = [],
 }: {
-  kind: "quote" | "invoice";
+  kind: "quote" | "invoice" | "salesOrder";
   customers: CustomerOption[];
   initial?: DocumentFormValues;
   documentId?: string;
@@ -132,13 +145,17 @@ export function DocumentForm({
       const action = documentId
         ? kind === "quote"
           ? updateQuote(documentId, payload)
-          : updateInvoice(documentId, payload)
+          : kind === "salesOrder"
+            ? updateSalesOrder(documentId, payload)
+            : updateInvoice(documentId, payload)
         : kind === "quote"
           ? createQuote(payload)
-          : createInvoice(payload);
+          : kind === "salesOrder"
+            ? createSalesOrder(payload)
+            : createInvoice(payload);
       const res = await action;
       if (res.ok) {
-        router.push(`/${kind}s/${res.id}`);
+        router.push(`/${KIND_ROUTE[kind]}/${res.id}`);
       } else {
         setError(res.error);
       }
@@ -156,7 +173,12 @@ export function DocumentForm({
       <Card>
         <CardHeader>
           <CardTitle>
-            {kind === "quote" ? "Quote" : "Invoice"} details
+            {kind === "quote"
+              ? "Quote"
+              : kind === "salesOrder"
+                ? "Sales order"
+                : "Invoice"}{" "}
+            details
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -215,6 +237,7 @@ export function DocumentForm({
           <div className="space-y-2">
             <Label htmlFor="secondaryDate">
               {kind === "quote" ? "Valid until" : "Due date"}
+              {kind === "salesOrder" ? " (production/ship-by)" : ""}
             </Label>
             <Input
               id="secondaryDate"
@@ -406,7 +429,11 @@ export function DocumentForm({
 
       <div className="flex gap-3">
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : documentId ? "Save changes" : `Create ${kind}`}
+          {pending
+            ? "Saving…"
+            : documentId
+              ? "Save changes"
+              : `Create ${KIND_LABEL[kind]}`}
         </Button>
         <Button
           type="button"

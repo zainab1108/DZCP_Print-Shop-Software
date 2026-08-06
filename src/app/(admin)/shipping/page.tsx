@@ -27,7 +27,7 @@ export default async function ShippingPage() {
         select: {
           id: true,
           number: true,
-          quote: { select: { customer: { select: { name: true } } } },
+          salesOrder: { select: { customer: { select: { name: true } } } },
         },
       },
     },
@@ -76,7 +76,7 @@ export default async function ShippingPage() {
                         {jobNumber(s.job.number)}
                       </Link>
                     </TableCell>
-                    <TableCell>{s.job.quote.customer.name}</TableCell>
+                    <TableCell>{s.job.salesOrder.customer.name}</TableCell>
                     <TableCell>{CARRIER_LABELS[s.carrier]}</TableCell>
                     <TableCell className="font-mono text-xs">
                       {s.trackingNumber ? (
