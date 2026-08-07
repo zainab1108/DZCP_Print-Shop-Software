@@ -5,6 +5,7 @@ import { DocumentLines } from "@/components/document-lines";
 import { PortalProofs } from "@/components/portal-proofs";
 import { PortalQuoteActions } from "@/components/portal-quote-actions";
 import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, quoteNumber } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -41,12 +42,27 @@ export default async function PortalQuotePage({
           <h1 className="text-3xl font-bold">{quoteNumber(quote.number)}</h1>
           <StatusBadge status={quote.status} />
         </div>
-        <Link
-          href={`/portal/${token}`}
-          className="text-muted-foreground text-sm hover:underline"
-        >
-          ← All documents
-        </Link>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={
+              <a
+                href={`/api/portal/${token}/quotes/${quote.id}/pdf`}
+                download
+              />
+            }
+          >
+            Download PDF
+          </Button>
+          <Link
+            href={`/portal/${token}`}
+            className="text-muted-foreground text-sm hover:underline"
+          >
+            ← All documents
+          </Link>
+        </div>
       </div>
       {quote.title && <p className="text-muted-foreground">{quote.title}</p>}
       <p className="text-muted-foreground text-sm">

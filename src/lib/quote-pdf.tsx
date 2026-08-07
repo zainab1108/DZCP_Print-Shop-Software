@@ -15,6 +15,8 @@ import {
 export interface QuotePdfData {
   number: number;
   title: string | null;
+  /** Not rendered — carried so the portal route can exclude DRAFT quotes. */
+  status: string;
   issueDate: Date;
   validUntil: Date | null;
   subtotal: string;

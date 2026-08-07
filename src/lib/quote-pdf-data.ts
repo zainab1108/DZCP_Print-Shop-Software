@@ -35,6 +35,7 @@ export async function loadQuotePdfData(
     data: {
       number: quote.number,
       title: quote.title,
+      status: quote.status,
       issueDate: quote.issueDate,
       validUntil: quote.validUntil,
       subtotal: quote.subtotal.toString(),
