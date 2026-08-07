@@ -2,7 +2,7 @@ import "server-only";
 
 import { Document, Image, Page, Text, View, renderToBuffer } from "@react-pdf/renderer";
 
-import { formatDate, formatMoney, formatUnitPrice, invoiceNumber } from "./format";
+import { formatDate, formatMoney, formatUnitPrice, salesOrderNumber } from "./format";
 import {
   loadLogo,
   MUTED,
@@ -12,33 +12,32 @@ import {
   type PdfLineItem,
 } from "./pdf-shared";
 
-export interface InvoicePdfData {
+export interface SalesOrderPdfData {
   number: number;
   title: string | null;
-  status: string;
   issueDate: Date;
   dueDate: Date | null;
   subtotal: string;
   taxRate: string;
   taxAmount: string;
   total: string;
-  amountPaid: string;
-  balance: string;
   /** Customer-facing terms. Internal notes are deliberately excluded. */
   terms: string | null;
   customer: PdfCustomer;
   lineItems: PdfLineItem[];
 }
 
-/** Render a customer-facing invoice PDF. Internal notes are never included. */
-export async function renderInvoicePdf(data: InvoicePdfData): Promise<Buffer> {
+/** Render a customer-facing sales order confirmation PDF. Internal notes are never included. */
+export async function renderSalesOrderPdf(
+  data: SalesOrderPdfData,
+): Promise<Buffer> {
   const logo = await loadLogo();
   const taxPercent = Number(data.taxRate) * 100;
   const addr = data.customer.address;
 
   return renderToBuffer(
     <Document
-      title={`${invoiceNumber(data.number)} — ${SHOP_NAME}`}
+      title={`${salesOrderNumber(data.number)} — ${SHOP_NAME}`}
       author={SHOP_NAME}
     >
       <Page size="LETTER" style={styles.page}>
@@ -53,14 +52,14 @@ export async function renderInvoicePdf(data: InvoicePdfData): Promise<Buffer> {
             <Text style={styles.shopName}>{SHOP_NAME}</Text>
           </View>
           <View>
-            <Text style={styles.docTitle}>INVOICE</Text>
-            <Text style={styles.docNumber}>{invoiceNumber(data.number)}</Text>
+            <Text style={styles.docTitle}>SALES ORDER</Text>
+            <Text style={styles.docNumber}>{salesOrderNumber(data.number)}</Text>
           </View>
         </View>
 
         <View style={styles.metaRow}>
           <View style={styles.metaBlock}>
-            <Text style={styles.label}>BILL TO</Text>
+            <Text style={styles.label}>FOR</Text>
             <Text style={{ fontFamily: "Helvetica-Bold" }}>
               {data.customer.name}
             </Text>
@@ -129,16 +128,6 @@ export async function renderInvoicePdf(data: InvoicePdfData): Promise<Buffer> {
             <Text>Total</Text>
             <Text>{formatMoney(data.total)}</Text>
           </View>
-          {Number(data.amountPaid) > 0 && (
-            <View style={styles.totalLine}>
-              <Text style={{ color: MUTED }}>Paid</Text>
-              <Text>−{formatMoney(data.amountPaid)}</Text>
-            </View>
-          )}
-          <View style={styles.balanceDue}>
-            <Text>Balance due</Text>
-            <Text>{formatMoney(data.balance)}</Text>
-          </View>
         </View>
 
         {data.terms ? (
@@ -151,7 +140,7 @@ export async function renderInvoicePdf(data: InvoicePdfData): Promise<Buffer> {
         <Text
           style={styles.footer}
           render={({ pageNumber, totalPages }) =>
-            `${SHOP_NAME} · ${invoiceNumber(data.number)} · Page ${pageNumber} of ${totalPages}`
+            `${SHOP_NAME} · ${salesOrderNumber(data.number)} · Page ${pageNumber} of ${totalPages}`
           }
           fixed
         />

@@ -6,6 +6,7 @@ import { DocumentLines } from "@/components/document-lines";
 import { JobStatusDropdown } from "@/components/job-detail-controls";
 import { SendToProduction } from "@/components/send-to-production";
 import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   formatDate,
@@ -54,7 +55,19 @@ export default async function SalesOrderPage({
           )}
         </div>
         <div className="flex flex-col items-end gap-2">
-          <SalesOrderActions id={salesOrder.id} status={salesOrder.status} />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <a href={`/api/sales-orders/${salesOrder.id}/pdf`} download />
+              }
+            >
+              Download PDF
+            </Button>
+            <SalesOrderActions id={salesOrder.id} status={salesOrder.status} />
+          </div>
           <SendToProduction
             salesOrderId={salesOrder.id}
             producible={producible}
