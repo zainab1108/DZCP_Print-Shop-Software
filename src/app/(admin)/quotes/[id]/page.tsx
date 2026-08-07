@@ -5,6 +5,7 @@ import { QuoteActions } from "@/components/document-actions";
 import { DocumentLines } from "@/components/document-lines";
 import { ProofsSection } from "@/components/proofs-section";
 import { StatusBadge } from "@/components/status-badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, quoteNumber, salesOrderNumber } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
@@ -40,7 +41,15 @@ export default async function QuotePage({
             <p className="text-muted-foreground">{quote.title}</p>
           )}
         </div>
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<a href={`/api/quotes/${quote.id}/pdf`} download />}
+          >
+            Download PDF
+          </Button>
           <QuoteActions id={quote.id} status={quote.status} />
         </div>
       </div>

@@ -41,6 +41,7 @@ All eight stages are complete (tested library shown where money/logic is involve
 
 - **Invoices** — `src/lib/invoice-pdf.tsx` + `invoice-pdf-data.ts`. Routes: `/api/invoices/[id]/pdf` (admin, gated by the normal session) and `/api/portal/[token]/invoices/[id]/pdf` (customer, verifies token ownership and excludes DRAFT invoices — 404 on any mismatch, never 403). Includes the paid/balance-due block.
 - **Sales orders** — `src/lib/sales-order-pdf.tsx` + `sales-order-pdf-data.ts`, route `/api/sales-orders/[id]/pdf` (admin only — sales orders aren't portal-exposed). Titled "SALES ORDER" and **omits the paid/balance-due block**, since it's an order confirmation, not a bill.
+- **Quotes** — `src/lib/quote-pdf.tsx` + `quote-pdf-data.ts`, route `/api/quotes/[id]/pdf` (admin only today; the loader returns `customerId` so a portal route can verify ownership if one is ever added). Titled "QUOTE", shows "valid until" instead of a due date, and omits the paid/balance-due block.
 
 **Quick customer creation** (`src/components/quick-customer-dialog.tsx`): the "+ New" button beside the customer picker on quote/invoice forms opens a dialog to create a customer inline via the existing `createCustomer` action, without losing the in-progress document form state. Its content is a `<div>`, not a `<form>` — the dialog is portaled but stays a React-tree descendant of `DocumentForm`'s own `<form>`, so a nested form would risk its submit bubbling into the outer one.
 
