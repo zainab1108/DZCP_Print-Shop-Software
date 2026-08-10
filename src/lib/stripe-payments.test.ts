@@ -6,6 +6,7 @@ import {
   canPayOnline,
   fromStripeAmount,
   isLiveKey,
+  mapStripePaymentMethod,
   STRIPE_MAX_CENTS,
   toStripeAmount,
 } from "./stripe-payments";
@@ -74,6 +75,32 @@ describe("stripe amount round-trip", () => {
     for (const v of values) {
       expect(fromStripeAmount(toStripeAmount(v))).toBe(new Decimal(v).toFixed(2));
     }
+  });
+});
+
+describe("mapStripePaymentMethod", () => {
+  it("maps card payments to CARD", () => {
+    expect(mapStripePaymentMethod("card")).toBe("CARD");
+    expect(mapStripePaymentMethod("card_present")).toBe("CARD");
+  });
+
+  it("maps bank debits to ACH", () => {
+    expect(mapStripePaymentMethod("us_bank_account")).toBe("ACH");
+    expect(mapStripePaymentMethod("ach_debit")).toBe("ACH");
+    expect(mapStripePaymentMethod("sepa_debit")).toBe("ACH");
+  });
+
+  // Guessing CARD here is what would quietly corrupt the accounting export.
+  it("does not pretend unknown methods are cards", () => {
+    expect(mapStripePaymentMethod("klarna")).toBe("OTHER");
+    expect(mapStripePaymentMethod("link")).toBe("OTHER");
+    expect(mapStripePaymentMethod("cashapp")).toBe("OTHER");
+    expect(mapStripePaymentMethod("some_future_method")).toBe("OTHER");
+  });
+
+  it("falls back to OTHER when Stripe tells us nothing", () => {
+    expect(mapStripePaymentMethod(null)).toBe("OTHER");
+    expect(mapStripePaymentMethod(undefined)).toBe("OTHER");
   });
 });
 
