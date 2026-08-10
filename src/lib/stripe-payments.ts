@@ -17,6 +17,18 @@ export const STRIPE_MAX_CENTS = 99_999_999;
 const PAYABLE_ONLINE: InvoiceStatus[] = ["SENT", "PARTIALLY_PAID", "OVERDUE"];
 
 /**
+ * Whether a Stripe secret key moves real money.
+ *
+ * Deliberately derived from the key rather than NODE_ENV: a production
+ * deployment running test keys is the normal way to trial payments, and
+ * comparing against NODE_ENV would silently drop every test-mode webhook.
+ */
+export function isLiveKey(key: string | undefined): boolean {
+  if (!key) return false;
+  return key.startsWith("sk_live_") || key.startsWith("rk_live_");
+}
+
+/**
  * Dollars -> integer cents for the Stripe API. Throws rather than rounding:
  * silently rounding money is how you end up charging the wrong amount.
  */

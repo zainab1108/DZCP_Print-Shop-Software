@@ -2,6 +2,8 @@ import "server-only";
 
 import Stripe from "stripe";
 
+import { isLiveKey } from "./stripe-payments";
+
 // Pinned so a Stripe-side default bump can't change payload shapes under us
 // without a deploy. Must match the version the installed SDK's types describe
 // (see node_modules/stripe/cjs/apiVersion.js) or the types drift from reality.
@@ -55,9 +57,12 @@ export function appUrl(): string {
   return url.origin;
 }
 
-/** True when the app is configured for real money. */
+/**
+ * True when the configured key moves real money. See `isLiveKey` for why this
+ * is derived from the key rather than NODE_ENV.
+ */
 export function isLiveMode(): boolean {
-  return process.env.NODE_ENV === "production";
+  return isLiveKey(process.env.STRIPE_SECRET_KEY);
 }
 
 /** Stripe online payments are only offered once the keys are configured. */

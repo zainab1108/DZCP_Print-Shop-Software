@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import {
   canPayOnline,
   fromStripeAmount,
+  isLiveKey,
   STRIPE_MAX_CENTS,
   toStripeAmount,
 } from "./stripe-payments";
@@ -73,6 +74,25 @@ describe("stripe amount round-trip", () => {
     for (const v of values) {
       expect(fromStripeAmount(toStripeAmount(v))).toBe(new Decimal(v).toFixed(2));
     }
+  });
+});
+
+describe("isLiveKey", () => {
+  it("recognises live keys", () => {
+    expect(isLiveKey("sk_live_abc123")).toBe(true);
+    expect(isLiveKey("rk_live_abc123")).toBe(true);
+  });
+
+  // The regression test: a production deploy running TEST keys must report
+  // test mode, or the webhook drops every test-mode event as a mismatch.
+  it("reports test keys as test mode regardless of environment", () => {
+    expect(isLiveKey("sk_test_abc123")).toBe(false);
+    expect(isLiveKey("rk_test_51Qabc")).toBe(false);
+  });
+
+  it("treats a missing key as not live", () => {
+    expect(isLiveKey(undefined)).toBe(false);
+    expect(isLiveKey("")).toBe(false);
   });
 });
 
