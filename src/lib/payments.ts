@@ -32,6 +32,27 @@ export function deriveInvoiceStatus(
   return "SENT";
 }
 
+/**
+ * Apply a captured payment to an invoice's running totals.
+ *
+ * Unlike `validatePaymentAmount`, this never rejects: it's for money that has
+ * already moved (a settled Stripe charge), where refusing would mean losing
+ * the record of a real payment. Overpayment is absorbed — `deriveInvoiceStatus`
+ * already treats paid >= total as PAID — and surfaced to staff by the caller.
+ */
+export function applyPaymentToInvoice(
+  current: InvoiceStatus,
+  total: MoneyInput,
+  amountPaid: MoneyInput,
+  captured: MoneyInput,
+): { amountPaid: Prisma.Decimal; status: InvoiceStatus } {
+  const newPaid = new Decimal(amountPaid).add(new Decimal(captured));
+  return {
+    amountPaid: newPaid,
+    status: deriveInvoiceStatus(current, total, newPaid),
+  };
+}
+
 export type PaymentValidation = { ok: true } | { ok: false; error: string };
 
 /**

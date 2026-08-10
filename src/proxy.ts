@@ -33,7 +33,14 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Run on everything except Next internals and static asset files.
+  //
+  // api/stripe/webhook is excluded rather than added to PUBLIC_PREFIXES: it
+  // authenticates by Stripe signature, not by session, and keeping the proxy
+  // off it avoids Next buffering a copy of the request body (which is
+  // truncated past 10MB *without failing* — that would silently break
+  // signature verification). Excluding the exact path also means a future
+  // /api/stripe/* route doesn't inherit public access by accident.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

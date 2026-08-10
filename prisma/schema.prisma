@@ -482,6 +482,14 @@ model Payment {
   receivedAt DateTime      @default(now())
   notes      String?
 
+  // Stripe online payments. Keyed on the PaymentIntent rather than the
+  // Checkout Session because refund/dispute events carry a PI and no session
+  // reference — a PI-keyed ledger can still be joined back to later. Unique
+  // so webhook retries can't double-record; NULL for manual payments (Postgres
+  // allows many NULLs in a unique index).
+  stripePaymentIntentId   String? @unique
+  stripeCheckoutSessionId String? // support lookups only, not an identity
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

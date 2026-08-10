@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyPaymentToInvoice,
   deriveInvoiceStatus,
   sumPayments,
   validatePaymentAmount,
@@ -54,6 +55,45 @@ describe("deriveInvoiceStatus", () => {
 
   it("keeps a zero-total invoice SENT until something is paid", () => {
     expect(deriveInvoiceStatus("SENT", "0", "0")).toBe("SENT");
+  });
+});
+
+describe("applyPaymentToInvoice", () => {
+  it("marks an invoice PAID when the balance is settled exactly", () => {
+    const res = applyPaymentToInvoice("SENT", "485.06", "0", "485.06");
+    expect(res.amountPaid.toFixed(2)).toBe("485.06");
+    expect(res.status).toBe("PAID");
+  });
+
+  it("adds to an existing partial payment", () => {
+    const res = applyPaymentToInvoice("PARTIALLY_PAID", "485.06", "100.00", "385.06");
+    expect(res.amountPaid.toFixed(2)).toBe("485.06");
+    expect(res.status).toBe("PAID");
+  });
+
+  it("leaves a short payment PARTIALLY_PAID", () => {
+    const res = applyPaymentToInvoice("SENT", "485.06", "0", "100.00");
+    expect(res.status).toBe("PARTIALLY_PAID");
+  });
+
+  // A staff edit mid-checkout can shrink the invoice below what Stripe took.
+  // We must absorb it, not throw — the money already moved.
+  it("absorbs an overpayment without throwing", () => {
+    const res = applyPaymentToInvoice("SENT", "300.00", "0", "485.06");
+    expect(res.amountPaid.toFixed(2)).toBe("485.06");
+    expect(res.status).toBe("PAID");
+  });
+
+  it("pays off an overdue invoice", () => {
+    expect(applyPaymentToInvoice("OVERDUE", "100.00", "0", "100.00").status).toBe(
+      "PAID",
+    );
+  });
+
+  it("never revives a void invoice", () => {
+    expect(applyPaymentToInvoice("VOID", "100.00", "0", "100.00").status).toBe(
+      "VOID",
+    );
   });
 });
 

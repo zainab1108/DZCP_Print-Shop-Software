@@ -118,6 +118,13 @@ export default async function InvoicePage({
             <p className={balance.isZero() ? "" : "font-medium"}>
               Balance due: {formatMoney(balance)}
             </p>
+            {balance.lt(0) && (
+              // Can happen when an invoice is edited down while a card payment
+              // is in flight — the captured amount is always recorded.
+              <p className="text-amber-700 dark:text-amber-400">
+                Overpaid by {formatMoney(balance.neg())} — may need a refund.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

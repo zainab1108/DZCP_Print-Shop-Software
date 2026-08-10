@@ -33,9 +33,18 @@ All eight stages are complete (tested library shown where money/logic is involve
 
 **Deferred — need the shop's own external accounts/keys, so left as manual/export paths:**
 
-- Stripe online card payments (slot: portal invoice page)
 - Carrier rate/label APIs (EasyPost/Shippo/UPS) — tracking is entered manually; CSV/deep-links cover the rest
 - QuickBooks/Xero OAuth sync — the `/api/export/accounting` CSV is the offline path
+
+**Stripe online card payments** (customer portal). Hosted Checkout — we never see card data and there's no client-side Stripe.js. Config is optional: with `STRIPE_SECRET_KEY`/`APP_URL` unset the Pay button simply doesn't render (`stripeConfigured()`), so the app runs fine without it.
+
+The rule the whole design hangs on: **the webhook (`src/app/api/stripe/webhook/route.ts`) is the sole writer of payments, and it records what Stripe actually captured (`amount_total`) — never a figure recomputed from the current balance.** A `SENT` invoice stays editable, so staff can change the total mid-checkout; re-validating there would reject money Stripe already took. Consequences to preserve if you touch this:
+
+- `validatePaymentAmount` is a pre-authorization guard for the **admin form only** — never call it from the webhook. Use `applyPaymentToInvoice`, which absorbs overpayment instead of rejecting (overpayments get flagged in `Payment.notes` and surfaced on the admin invoice page).
+- Gate on `session.payment_status === "paid"`, **not** `status === "complete"` — async methods complete the session before the money lands. All of this decision logic is pure and tested in `src/lib/stripe-webhook.ts`.
+- Idempotency is `Payment.stripePaymentIntentId @unique` — keyed on the PaymentIntent, not the session, because refund/dispute events carry only a PI. P2002 is caught *outside* the transaction (a unique violation aborts it) and treated as success.
+- Payment writes are **uniformly incremental** (`{ increment }` / `{ decrement }`) inside interactive transactions. The `UPDATE` takes a row lock held to commit, serializing the webhook against staff entry; its return value is the post-increment row. Never mix in an absolute `amountPaid` write — that's what loses payments.
+- The success redirect **never writes**. It re-checks the session read-only (`justPaid`) before showing anything, since `?paid=1` is spoofable, and shows a "confirming" state rather than a premature "Paid" while the webhook is in flight.
 
 **PDF export** (`@react-pdf/renderer`): shared styling, brand colors, and the logo loader live in `src/lib/pdf-shared.ts` — both document templates import from it, so a styling change applies to all PDFs at once. **Internal notes are never included in any PDF**, only customer-facing `terms` (the `load*PdfData` loaders deliberately don't select `notes`). The embedded logo is a pre-downscaled `public/logo-pdf.png` (256px), not the full-size nav logo — react-pdf embeds raw image bytes with no resizing, so using the original would bloat every PDF to 1.5MB+.
 
@@ -57,6 +66,7 @@ Anything touching money — pricing, tax, totals, discounts, payments — **must
 
 - The admin area is gated by `src/proxy.ts` (Next 16 renamed `middleware`→`proxy`), which verifies a signed session cookie via `src/lib/auth/session.ts` (HMAC over `AUTH_SECRET`, no DB lookup). It also covers server actions and admin API routes.
 - **`/login`, `/portal/*`, and `/api/portal/*` are intentionally public** — the customer portal has its own per-customer token auth. Don't gate them.
+- **`/api/stripe/webhook` is also reachable without a session**, but by a different mechanism: it's excluded from the proxy's `matcher` (not added to `PUBLIC_PREFIXES`) so the raw body arrives unbuffered for signature verification. Its credential is the Stripe signature. Keep the exclusion path-exact — a `/api/stripe` prefix would silently make future routes public.
 - Passwords are scrypt-hashed (`src/lib/auth/password.ts`), no external auth service. Create the first staff login with `ADMIN_EMAIL=… ADMIN_PASSWORD=… npm run create-admin` (operator sets the password; always ADMIN role; never seeded).
 - Requires `AUTH_SECRET` in `.env` (see `.env.example`).
 - **Roles**: `ADMIN` (users, pricing/markup config) vs `STAFF` (everything else). Checked live per request via `getCurrentUser()` — not baked into the session token, so a role change takes effect immediately. Page guard: `requireAdminPage()` (redirects to `/`); action guard: `requireAdminAction()` / the pattern in `src/lib/actions/users.ts`. `src/lib/auth/roles.ts` has `isLastAdmin` — deleting/demoting the sole admin is blocked to prevent lockout. Manage staff at `/users` (admin-only); self-service password change at `/account`.

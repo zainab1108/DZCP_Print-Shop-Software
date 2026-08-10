@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DocumentLines } from "@/components/document-lines";
+import { PortalPayButton } from "@/components/portal-pay-button";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,15 +22,43 @@ import {
   SHIPMENT_STATUS_LABELS,
   trackingUrl,
 } from "@/lib/shipping";
+import { stripe, stripeConfigured } from "@/lib/stripe";
+import { canPayOnline } from "@/lib/stripe-payments";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Did the customer really just pay? Read-only check against Stripe.
+ *
+ * `?paid=1` on its own is trivially spoofable, so it's never trusted for
+ * display — we confirm the session is real, is for THIS invoice, and actually
+ * settled. This never writes; the webhook is the sole writer.
+ */
+async function justPaid(
+  sessionId: string | undefined,
+  invoiceId: string,
+): Promise<boolean> {
+  if (!sessionId || !stripeConfigured()) return false;
+  try {
+    const session = await stripe().checkout.sessions.retrieve(sessionId);
+    return (
+      session.metadata?.invoiceId === invoiceId &&
+      session.payment_status === "paid"
+    );
+  } catch {
+    return false;
+  }
+}
+
 export default async function PortalInvoicePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string; id: string }>;
+  searchParams: Promise<{ paid?: string; session_id?: string }>;
 }) {
   const { token, id } = await params;
+  const { session_id: sessionId } = await searchParams;
   const customer = await prisma.customer.findUnique({
     where: { portalToken: token },
     select: { id: true },
@@ -61,6 +90,16 @@ export default async function PortalInvoicePage({
   const shipments = (invoice.sourceSalesOrder?.job?.shipments ?? []).filter(
     (s) => isDispatched(s.status),
   );
+
+  // Stripe redirects back immediately, often before the webhook lands, so a
+  // confirmed payment can coexist with a still-outstanding balance for a
+  // second or two. Say so plainly rather than showing a stale "unpaid".
+  const paymentConfirmed = await justPaid(sessionId, invoice.id);
+  const awaitingWebhook = paymentConfirmed && balance.gt(0);
+  const offerPayment =
+    stripeConfigured() &&
+    canPayOnline(invoice.status, balance) &&
+    !awaitingWebhook; // never offer to pay twice
 
   return (
     <div className="space-y-6">
@@ -101,14 +140,36 @@ export default async function PortalInvoicePage({
         {invoice.dueDate && <> · due {formatDate(invoice.dueDate)}</>}
       </p>
 
-      {!balance.isZero() && invoice.status !== "VOID" && (
+      {awaitingWebhook && (
         <Card>
           <CardContent className="pt-6">
+            <p className="text-sm font-medium">
+              Payment received — we&apos;re confirming it with our payment
+              processor.
+            </p>
+            <p className="text-muted-foreground text-sm">
+              This invoice will update shortly. You don&apos;t need to pay
+              again.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {balance.gt(0) && invoice.status !== "VOID" && (
+        <Card>
+          <CardContent className="space-y-3 pt-6">
             <p className="text-sm">
               Balance due:{" "}
               <span className="font-semibold">{formatMoney(balance)}</span>
               {invoice.dueDate && <> by {formatDate(invoice.dueDate)}</>}
             </p>
+            {offerPayment && (
+              <PortalPayButton
+                token={token}
+                invoiceId={invoice.id}
+                amountLabel={formatMoney(balance)}
+              />
+            )}
           </CardContent>
         </Card>
       )}
