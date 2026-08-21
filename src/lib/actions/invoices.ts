@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma, type InvoiceStatus } from "@/generated/prisma/client";
-import { computeDocumentTotals, percentToRate } from "@/lib/money";
+import {
+  computeDocumentTotals,
+  parseDiscountValue,
+  percentToRate,
+} from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { documentInput, type DocumentInput } from "@/lib/validation";
 
@@ -19,7 +23,10 @@ function docData(input: DocumentInput, taxExempt: boolean) {
       taxable: l.taxable,
     })),
     percentToRate(input.taxPercent),
-    { taxExempt },
+    {
+      taxExempt,
+      discount: { type: input.discountType, value: input.discountValue },
+    },
   );
   return {
     fields: {
@@ -31,6 +38,9 @@ function docData(input: DocumentInput, taxExempt: boolean) {
         : null,
       taxRate: percentToRate(input.taxPercent),
       subtotal: totals.subtotal,
+      discountType: input.discountType,
+      discountValue: parseDiscountValue(input.discountValue),
+      discountAmount: totals.discountAmount,
       taxAmount: totals.taxAmount,
       total: totals.total,
       terms: input.terms ?? null,

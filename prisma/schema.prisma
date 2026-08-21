@@ -77,6 +77,16 @@ model Address {
   @@index([customerId])
 }
 
+// ---------- Discounts ----------
+
+// A document-level discount is either a percentage of the subtotal or a flat
+// dollar amount. Stored alongside the resolved `discountAmount` so documents
+// stay stable historical records even if the rule is later reinterpreted.
+enum DiscountType {
+  PERCENT
+  AMOUNT
+}
+
 // ---------- Quotes ----------
 
 enum QuoteStatus {
@@ -101,10 +111,14 @@ model Quote {
 
   // Money is always Decimal, never Float. Totals are computed in app code
   // (with tests) and persisted here so documents are stable historical records.
-  subtotal  Decimal @default(0) @db.Decimal(12, 2)
+  subtotal  Decimal @default(0) @db.Decimal(12, 2) // sum of line totals, before discount
   taxRate   Decimal @default(0) @db.Decimal(6, 5) // fraction, e.g. 0.08250
   taxAmount Decimal @default(0) @db.Decimal(12, 2)
-  total     Decimal @default(0) @db.Decimal(12, 2)
+  total     Decimal @default(0) @db.Decimal(12, 2) // subtotal - discountAmount + taxAmount
+
+  discountType   DiscountType @default(AMOUNT)
+  discountValue  Decimal      @default(0) @db.Decimal(12, 2) // percent (10.00) or dollars
+  discountAmount Decimal      @default(0) @db.Decimal(12, 2) // resolved dollars
 
   notes String? // internal
   terms String? // shown on the quote
@@ -166,10 +180,14 @@ model SalesOrder {
   issueDate DateTime         @default(now())
   dueDate   DateTime? // production/ship-by date
 
-  subtotal  Decimal @default(0) @db.Decimal(12, 2)
+  subtotal  Decimal @default(0) @db.Decimal(12, 2) // sum of line totals, before discount
   taxRate   Decimal @default(0) @db.Decimal(6, 5)
   taxAmount Decimal @default(0) @db.Decimal(12, 2)
-  total     Decimal @default(0) @db.Decimal(12, 2)
+  total     Decimal @default(0) @db.Decimal(12, 2) // subtotal - discountAmount + taxAmount
+
+  discountType   DiscountType @default(AMOUNT)
+  discountValue  Decimal      @default(0) @db.Decimal(12, 2)
+  discountAmount Decimal      @default(0) @db.Decimal(12, 2)
 
   notes String? // internal
   terms String? // shown on the order
@@ -336,10 +354,14 @@ model Invoice {
   issueDate DateTime      @default(now())
   dueDate   DateTime?
 
-  subtotal   Decimal @default(0) @db.Decimal(12, 2)
+  subtotal   Decimal @default(0) @db.Decimal(12, 2) // sum of line totals, before discount
   taxRate    Decimal @default(0) @db.Decimal(6, 5)
   taxAmount  Decimal @default(0) @db.Decimal(12, 2)
-  total      Decimal @default(0) @db.Decimal(12, 2)
+  total      Decimal @default(0) @db.Decimal(12, 2) // subtotal - discountAmount + taxAmount
+
+  discountType   DiscountType @default(AMOUNT)
+  discountValue  Decimal      @default(0) @db.Decimal(12, 2)
+  discountAmount Decimal      @default(0) @db.Decimal(12, 2)
   amountPaid Decimal @default(0) @db.Decimal(12, 2) // maintained by the payments stage; balance due = total - amountPaid
 
   notes String? // internal

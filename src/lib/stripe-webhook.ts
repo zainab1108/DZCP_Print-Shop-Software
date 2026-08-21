@@ -57,7 +57,10 @@ export function decideWebhookOutcome(event: Stripe.Event): WebhookOutcome {
   // We only ever create USD sessions. Asserting it here guards the 100x error
   // a zero-decimal currency (JPY, KRW) would cause in fromStripeAmount.
   if (session.currency && session.currency.toLowerCase() !== "usd") {
-    return { kind: "ignore", reason: `unexpected currency ${session.currency}` };
+    return {
+      kind: "ignore",
+      reason: `unexpected currency ${session.currency}`,
+    };
   }
 
   const invoiceId = session.metadata?.invoiceId;

@@ -73,7 +73,9 @@ describe("stripe amount round-trip", () => {
       "999999.99",
     ];
     for (const v of values) {
-      expect(fromStripeAmount(toStripeAmount(v))).toBe(new Decimal(v).toFixed(2));
+      expect(fromStripeAmount(toStripeAmount(v))).toBe(
+        new Decimal(v).toFixed(2),
+      );
     }
   });
 });

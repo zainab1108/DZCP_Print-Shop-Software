@@ -53,7 +53,10 @@ describe("decideWebhookOutcome", () => {
   // cause us to drop a payment Stripe already captured.
   it("still records when the captured amount no longer matches the invoice", () => {
     const out = decideWebhookOutcome(
-      sessionEvent({ amount_total: 48506, metadata: { invoiceId: "inv_abc", expectedCents: "30000" } }),
+      sessionEvent({
+        amount_total: 48506,
+        metadata: { invoiceId: "inv_abc", expectedCents: "30000" },
+      }),
     );
     expect(out.kind).toBe("record");
     if (out.kind === "record") {
@@ -64,7 +67,9 @@ describe("decideWebhookOutcome", () => {
 
   it("ignores a completed-but-unpaid session", () => {
     // Async payment methods complete the session before the money lands.
-    const out = decideWebhookOutcome(sessionEvent({ payment_status: "unpaid" }));
+    const out = decideWebhookOutcome(
+      sessionEvent({ payment_status: "unpaid" }),
+    );
     expect(out.kind).toBe("ignore");
   });
 

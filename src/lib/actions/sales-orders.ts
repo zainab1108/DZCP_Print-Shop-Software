@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma, type SalesOrderStatus } from "@/generated/prisma/client";
-import { computeDocumentTotals, percentToRate } from "@/lib/money";
+import {
+  computeDocumentTotals,
+  parseDiscountValue,
+  percentToRate,
+} from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { documentInput, type DocumentInput } from "@/lib/validation";
 
@@ -19,7 +23,10 @@ function docData(input: DocumentInput, taxExempt: boolean) {
       taxable: l.taxable,
     })),
     percentToRate(input.taxPercent),
-    { taxExempt },
+    {
+      taxExempt,
+      discount: { type: input.discountType, value: input.discountValue },
+    },
   );
   return {
     fields: {
@@ -31,6 +38,9 @@ function docData(input: DocumentInput, taxExempt: boolean) {
         : null,
       taxRate: percentToRate(input.taxPercent),
       subtotal: totals.subtotal,
+      discountType: input.discountType,
+      discountValue: parseDiscountValue(input.discountValue),
+      discountAmount: totals.discountAmount,
       taxAmount: totals.taxAmount,
       total: totals.total,
       terms: input.terms ?? null,
@@ -190,6 +200,9 @@ export async function convertSalesOrderToInvoice(
           dueDate,
           taxRate: salesOrder.taxRate,
           subtotal: salesOrder.subtotal,
+          discountType: salesOrder.discountType,
+          discountValue: salesOrder.discountValue,
+          discountAmount: salesOrder.discountAmount,
           taxAmount: salesOrder.taxAmount,
           total: salesOrder.total,
           terms: salesOrder.terms,
@@ -253,7 +266,8 @@ export async function convertSalesOrderToQuote(
     if (salesOrder.job) {
       return {
         ok: false,
-        error: "Production has already started on this order — it can't be reverted",
+        error:
+          "Production has already started on this order — it can't be reverted",
       };
     }
 
@@ -264,6 +278,9 @@ export async function convertSalesOrderToQuote(
           title: salesOrder.title,
           taxRate: salesOrder.taxRate,
           subtotal: salesOrder.subtotal,
+          discountType: salesOrder.discountType,
+          discountValue: salesOrder.discountValue,
+          discountAmount: salesOrder.discountAmount,
           taxAmount: salesOrder.taxAmount,
           total: salesOrder.total,
           terms: salesOrder.terms,

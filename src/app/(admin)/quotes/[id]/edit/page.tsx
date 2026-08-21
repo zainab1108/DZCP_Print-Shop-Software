@@ -47,6 +47,10 @@ export default async function EditQuotePage({
           issueDate: dateToInput(quote.issueDate),
           secondaryDate: dateToInput(quote.validUntil),
           taxPercent: rateToPercent(quote.taxRate),
+          discountType: quote.discountType,
+          discountValue: quote.discountValue.isZero()
+            ? ""
+            : quote.discountValue.toString(),
           terms: quote.terms ?? "",
           notes: quote.notes ?? "",
           lineItems: quote.lineItems.map((l) => ({

@@ -120,7 +120,10 @@ export async function deletePayment(paymentId: string): Promise<ActionResult> {
         updated.amountPaid,
       );
       if (status !== updated.status) {
-        await tx.invoice.update({ where: { id: invoice.id }, data: { status } });
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: { status },
+        });
       }
     });
 

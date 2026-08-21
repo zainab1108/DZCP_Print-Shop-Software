@@ -22,6 +22,10 @@ interface Totals {
   taxRate: { toString(): string };
   taxAmount: { toString(): string };
   total: { toString(): string };
+  // Optional so older callers (and documents predating discounts) still work.
+  discountType?: "PERCENT" | "AMOUNT";
+  discountValue?: { toString(): string };
+  discountAmount?: { toString(): string };
 }
 
 export function DocumentLines({
@@ -32,6 +36,12 @@ export function DocumentLines({
   totals: Totals;
 }) {
   const taxPercent = Number(totals.taxRate.toString()) * 100;
+  const discount = Number(totals.discountAmount?.toString() ?? 0);
+  // Show how the discount was expressed, e.g. "Discount (10%)".
+  const discountLabel =
+    totals.discountType === "PERCENT"
+      ? `Discount (${Number(totals.discountValue?.toString() ?? 0)}%)`
+      : "Discount";
 
   return (
     <div className="space-y-4">
@@ -71,6 +81,14 @@ export function DocumentLines({
           <span className="text-muted-foreground">Subtotal</span>
           <span className="tabular-nums">{formatMoney(totals.subtotal)}</span>
         </div>
+        {discount > 0 && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{discountLabel}</span>
+            <span className="tabular-nums">
+              −{formatMoney(totals.discountAmount ?? 0)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-muted-foreground">
             Tax ({taxPercent.toFixed(taxPercent % 1 === 0 ? 0 : 2)}%)

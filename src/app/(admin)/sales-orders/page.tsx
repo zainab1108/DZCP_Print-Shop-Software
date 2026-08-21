@@ -25,10 +25,7 @@ export default async function SalesOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Sales orders</h1>
-        <Button
-          nativeButton={false}
-          render={<Link href="/sales-orders/new" />}
-        >
+        <Button nativeButton={false} render={<Link href="/sales-orders/new" />}>
           New sales order
         </Button>
       </div>

@@ -49,6 +49,10 @@ export default async function EditSalesOrderPage({
           issueDate: dateToInput(salesOrder.issueDate),
           secondaryDate: dateToInput(salesOrder.dueDate),
           taxPercent: rateToPercent(salesOrder.taxRate),
+          discountType: salesOrder.discountType,
+          discountValue: salesOrder.discountValue.isZero()
+            ? ""
+            : salesOrder.discountValue.toString(),
           terms: salesOrder.terms ?? "",
           notes: salesOrder.notes ?? "",
           lineItems: salesOrder.lineItems.map((l) => ({

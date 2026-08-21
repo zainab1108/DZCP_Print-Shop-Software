@@ -59,6 +59,8 @@ export interface DocumentFormValues {
   issueDate: string; // yyyy-mm-dd
   secondaryDate: string; // validUntil (quote) / dueDate (invoice)
   taxPercent: string;
+  discountType: "PERCENT" | "AMOUNT";
+  discountValue: string;
   terms: string;
   notes: string;
   lineItems: LineValues[];
@@ -107,6 +109,8 @@ export function DocumentForm({
       issueDate: today(),
       secondaryDate: "",
       taxPercent: "",
+      discountType: "AMOUNT",
+      discountValue: "",
       terms: "",
       notes: "",
       lineItems: [{ ...emptyLine }],
@@ -261,6 +265,40 @@ export function DocumentForm({
               </p>
             )}
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="discountValue">Discount</Label>
+            <div className="flex gap-2">
+              <Select
+                value={values.discountType}
+                onValueChange={(v) =>
+                  set({ discountType: (v ?? "AMOUNT") as "PERCENT" | "AMOUNT" })
+                }
+                items={[
+                  { value: "AMOUNT", label: "$ off" },
+                  { value: "PERCENT", label: "% off" },
+                ]}
+              >
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AMOUNT">$ off</SelectItem>
+                  <SelectItem value="PERCENT">% off</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                id="discountValue"
+                inputMode="decimal"
+                className="flex-1"
+                value={values.discountValue}
+                onChange={(e) => set({ discountValue: e.target.value })}
+                placeholder={values.discountType === "PERCENT" ? "10" : "25.00"}
+              />
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Leave blank for none. Tax is charged on the discounted amount.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -390,6 +428,14 @@ export function DocumentForm({
                 {formatMoney(preview.subtotal)}
               </span>
             </div>
+            {preview.discount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Discount</span>
+                <span className="tabular-nums">
+                  −{formatMoney(preview.discount)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tax</span>
               <span className="tabular-nums">{formatMoney(preview.tax)}</span>
@@ -463,9 +509,22 @@ function previewTotals(values: DocumentFormValues, taxExempt: boolean) {
     0,
   );
   const rate = Number(values.taxPercent || 0) / 100;
+
+  // Mirrors src/lib/money.ts (capped, split proportionally across taxable and
+  // non-taxable lines). Display only — the server recomputes with Decimal.
+  const rawDiscount =
+    values.discountType === "PERCENT"
+      ? (subtotal * Number(values.discountValue || 0)) / 100
+      : Number(values.discountValue || 0);
+  const discount = Number.isFinite(rawDiscount)
+    ? Math.min(Math.max(rawDiscount, 0), subtotal)
+    : 0;
+  const discountedTaxable =
+    subtotal > 0 ? taxableBase - discount * (taxableBase / subtotal) : 0;
+
   const tax =
     taxExempt || !Number.isFinite(rate) || rate <= 0
       ? 0
-      : Math.round(taxableBase * rate * 100) / 100;
-  return { subtotal, tax, total: subtotal + tax };
+      : Math.round(discountedTaxable * rate * 100) / 100;
+  return { subtotal, discount, tax, total: subtotal - discount + tax };
 }

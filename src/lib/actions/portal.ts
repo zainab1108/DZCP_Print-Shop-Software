@@ -12,8 +12,7 @@ import { canPayOnline, toStripeAmount } from "@/lib/stripe-payments";
 import type { ActionResult } from "./customers";
 
 export type CheckoutResult =
-  | { ok: true; url: string }
-  | { ok: false; error: string };
+  { ok: true; url: string } | { ok: false; error: string };
 
 export async function enablePortal(customerId: string): Promise<ActionResult> {
   try {

@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   computeDocumentTotals,
   computeLineTotal,
+  parseDiscountValue,
   percentToRate,
+  resolveDiscount,
 } from "./money";
+import { Prisma } from "@/generated/prisma/client";
 
 describe("computeLineTotal", () => {
   it("multiplies quantity by unit price", () => {
@@ -114,5 +117,177 @@ describe("percentToRate", () => {
   it("rejects out-of-range percents", () => {
     expect(() => percentToRate("101")).toThrow();
     expect(() => percentToRate("-1")).toThrow();
+  });
+});
+
+describe("resolveDiscount", () => {
+  const sub = (v: string) => new Prisma.Decimal(v);
+
+  it("resolves a percentage of the subtotal", () => {
+    expect(
+      resolveDiscount(sub("200.00"), { type: "PERCENT", value: "10" }).toFixed(
+        2,
+      ),
+    ).toBe("20.00");
+  });
+
+  it("resolves a flat amount unchanged", () => {
+    expect(
+      resolveDiscount(sub("200.00"), {
+        type: "AMOUNT",
+        value: "35.50",
+      }).toFixed(2),
+    ).toBe("35.50");
+  });
+
+  it("rounds a percentage to cents", () => {
+    // 33.333% of 100 = 33.333 -> 33.33
+    expect(
+      resolveDiscount(sub("100.00"), {
+        type: "PERCENT",
+        value: "33.333",
+      }).toFixed(2),
+    ).toBe("33.33");
+  });
+
+  // A discount bigger than the job would otherwise make the total negative,
+  // which is a credit note — not something this app models.
+  it("caps a flat discount at the subtotal", () => {
+    expect(
+      resolveDiscount(sub("50.00"), {
+        type: "AMOUNT",
+        value: "500.00",
+      }).toFixed(2),
+    ).toBe("50.00");
+  });
+
+  it("treats 100% as the whole subtotal", () => {
+    expect(
+      resolveDiscount(sub("80.00"), { type: "PERCENT", value: "100" }).toFixed(
+        2,
+      ),
+    ).toBe("80.00");
+  });
+
+  it("returns zero when there is no discount", () => {
+    expect(resolveDiscount(sub("100.00"), undefined).toString()).toBe("0");
+    expect(
+      resolveDiscount(sub("100.00"), { type: "AMOUNT", value: "0" }).toString(),
+    ).toBe("0");
+  });
+
+  it("rejects negative and over-100% discounts", () => {
+    expect(() =>
+      resolveDiscount(sub("100"), { type: "AMOUNT", value: "-1" }),
+    ).toThrow();
+    expect(() =>
+      resolveDiscount(sub("100"), { type: "PERCENT", value: "101" }),
+    ).toThrow();
+  });
+});
+
+describe("computeDocumentTotals with a discount", () => {
+  const taxable = [{ quantity: 1, unitPrice: "100.00", taxable: true }];
+
+  it("subtracts the discount and taxes the discounted amount", () => {
+    const t = computeDocumentTotals(taxable, "0.10", {
+      discount: { type: "AMOUNT", value: "20.00" },
+    });
+    expect(t.subtotal.toFixed(2)).toBe("100.00");
+    expect(t.discountAmount.toFixed(2)).toBe("20.00");
+    expect(t.taxAmount.toFixed(2)).toBe("8.00"); // 10% of 80, not of 100
+    expect(t.total.toFixed(2)).toBe("88.00");
+  });
+
+  it("handles a percentage discount the same way", () => {
+    const t = computeDocumentTotals(taxable, "0.10", {
+      discount: { type: "PERCENT", value: "25" },
+    });
+    expect(t.discountAmount.toFixed(2)).toBe("25.00");
+    expect(t.taxAmount.toFixed(2)).toBe("7.50");
+    expect(t.total.toFixed(2)).toBe("82.50");
+  });
+
+  // Reproduces a real imported YoPrint invoice, to prove we match what the
+  // shop's previous system produced: subtotal 224.99, discount 200, tax 1.50.
+  it("matches the legacy YoPrint arithmetic", () => {
+    const t = computeDocumentTotals(
+      [{ quantity: 1, unitPrice: "224.99", taxable: true }],
+      "0.06",
+      { discount: { type: "AMOUNT", value: "200.00" } },
+    );
+    expect(t.subtotal.toFixed(2)).toBe("224.99");
+    expect(t.discountAmount.toFixed(2)).toBe("200.00");
+    expect(t.taxAmount.toFixed(2)).toBe("1.50");
+    expect(t.total.toFixed(2)).toBe("26.49");
+  });
+
+  // A discount aimed at untaxed goods must not wrongly cut the tax owed.
+  it("splits the discount across taxable and non-taxable lines", () => {
+    const mixed = [
+      { quantity: 1, unitPrice: "800.00", taxable: true },
+      { quantity: 1, unitPrice: "200.00", taxable: false },
+    ];
+    const t = computeDocumentTotals(mixed, "0.10", {
+      discount: { type: "AMOUNT", value: "100.00" },
+    });
+    // 80% of the subtotal is taxable, so 80 of the 100 discount lands there:
+    // taxable base 800 - 80 = 720, tax = 72.00
+    expect(t.taxAmount.toFixed(2)).toBe("72.00");
+    expect(t.total.toFixed(2)).toBe("972.00"); // 1000 - 100 + 72
+  });
+
+  it("charges no tax for a tax-exempt customer even with a discount", () => {
+    const t = computeDocumentTotals(taxable, "0.10", {
+      taxExempt: true,
+      discount: { type: "PERCENT", value: "10" },
+    });
+    expect(t.taxAmount.toFixed(2)).toBe("0.00");
+    expect(t.total.toFixed(2)).toBe("90.00");
+  });
+
+  it("zeroes the total when the discount covers everything", () => {
+    const t = computeDocumentTotals(taxable, "0.10", {
+      discount: { type: "PERCENT", value: "100" },
+    });
+    expect(t.discountAmount.toFixed(2)).toBe("100.00");
+    expect(t.taxAmount.toFixed(2)).toBe("0.00");
+    expect(t.total.toFixed(2)).toBe("0.00");
+  });
+
+  it("never produces a negative total from an oversized discount", () => {
+    const t = computeDocumentTotals(taxable, "0.10", {
+      discount: { type: "AMOUNT", value: "999.00" },
+    });
+    expect(t.total.toFixed(2)).toBe("0.00");
+  });
+
+  it("behaves exactly as before when there is no discount", () => {
+    const t = computeDocumentTotals(taxable, "0.10");
+    expect(t.discountAmount.toString()).toBe("0");
+    expect(t.taxAmount.toFixed(2)).toBe("10.00");
+    expect(t.total.toFixed(2)).toBe("110.00");
+  });
+
+  it("survives a zero subtotal without dividing by zero", () => {
+    const t = computeDocumentTotals(
+      [{ quantity: 0, unitPrice: "10.00", taxable: true }],
+      "0.10",
+      {
+        discount: { type: "PERCENT", value: "50" },
+      },
+    );
+    expect(t.total.toFixed(2)).toBe("0.00");
+  });
+});
+
+describe("parseDiscountValue", () => {
+  it("parses a form value and treats empty as zero", () => {
+    expect(parseDiscountValue("12.50").toFixed(2)).toBe("12.50");
+    expect(parseDiscountValue("").toString()).toBe("0");
+  });
+
+  it("rejects negatives", () => {
+    expect(() => parseDiscountValue("-5")).toThrow();
   });
 });

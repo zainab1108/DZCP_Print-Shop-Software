@@ -66,7 +66,12 @@ describe("applyPaymentToInvoice", () => {
   });
 
   it("adds to an existing partial payment", () => {
-    const res = applyPaymentToInvoice("PARTIALLY_PAID", "485.06", "100.00", "385.06");
+    const res = applyPaymentToInvoice(
+      "PARTIALLY_PAID",
+      "485.06",
+      "100.00",
+      "385.06",
+    );
     expect(res.amountPaid.toFixed(2)).toBe("485.06");
     expect(res.status).toBe("PAID");
   });
@@ -85,9 +90,9 @@ describe("applyPaymentToInvoice", () => {
   });
 
   it("pays off an overdue invoice", () => {
-    expect(applyPaymentToInvoice("OVERDUE", "100.00", "0", "100.00").status).toBe(
-      "PAID",
-    );
+    expect(
+      applyPaymentToInvoice("OVERDUE", "100.00", "0", "100.00").status,
+    ).toBe("PAID");
   });
 
   it("never revives a void invoice", () => {

@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { Prisma, type QuoteStatus } from "@/generated/prisma/client";
-import { computeDocumentTotals, percentToRate } from "@/lib/money";
+import {
+  computeDocumentTotals,
+  parseDiscountValue,
+  percentToRate,
+} from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { documentInput, type DocumentInput } from "@/lib/validation";
 
@@ -19,7 +23,10 @@ function docData(input: DocumentInput, taxExempt: boolean) {
       taxable: l.taxable,
     })),
     percentToRate(input.taxPercent),
-    { taxExempt },
+    {
+      taxExempt,
+      discount: { type: input.discountType, value: input.discountValue },
+    },
   );
   return {
     fields: {
@@ -28,6 +35,9 @@ function docData(input: DocumentInput, taxExempt: boolean) {
       issueDate: new Date(`${input.issueDate}T00:00:00`),
       taxRate: percentToRate(input.taxPercent),
       subtotal: totals.subtotal,
+      discountType: input.discountType,
+      discountValue: parseDiscountValue(input.discountValue),
+      discountAmount: totals.discountAmount,
       taxAmount: totals.taxAmount,
       total: totals.total,
       terms: input.terms ?? null,
@@ -168,7 +178,9 @@ export async function deleteQuote(id: string): Promise<ActionResult> {
 }
 
 /** Copy an approved quote into a new confirmed sales order and mark the quote converted. */
-export async function convertQuoteToSalesOrder(id: string): Promise<ActionResult> {
+export async function convertQuoteToSalesOrder(
+  id: string,
+): Promise<ActionResult> {
   try {
     const quote = await prisma.quote.findUnique({
       where: { id },
@@ -191,6 +203,9 @@ export async function convertQuoteToSalesOrder(id: string): Promise<ActionResult
           title: quote.title,
           taxRate: quote.taxRate,
           subtotal: quote.subtotal,
+          discountType: quote.discountType,
+          discountValue: quote.discountValue,
+          discountAmount: quote.discountAmount,
           taxAmount: quote.taxAmount,
           total: quote.total,
           terms: quote.terms,

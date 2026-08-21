@@ -1,8 +1,20 @@
 import "server-only";
 
-import { Document, Image, Page, Text, View, renderToBuffer } from "@react-pdf/renderer";
+import {
+  Document,
+  Image,
+  Page,
+  Text,
+  View,
+  renderToBuffer,
+} from "@react-pdf/renderer";
 
-import { formatDate, formatMoney, formatUnitPrice, quoteNumber } from "./format";
+import {
+  formatDate,
+  formatMoney,
+  formatUnitPrice,
+  quoteNumber,
+} from "./format";
 import {
   loadLogo,
   MUTED,
@@ -20,6 +32,10 @@ export interface QuotePdfData {
   issueDate: Date;
   validUntil: Date | null;
   subtotal: string;
+  /** Resolved discount in dollars; "0" when there isn't one. */
+  discountAmount: string;
+  discountType: "PERCENT" | "AMOUNT";
+  discountValue: string;
   taxRate: string;
   taxAmount: string;
   total: string;
@@ -118,6 +134,16 @@ export async function renderQuotePdf(data: QuotePdfData): Promise<Buffer> {
             <Text style={{ color: MUTED }}>Subtotal</Text>
             <Text>{formatMoney(data.subtotal)}</Text>
           </View>
+          {Number(data.discountAmount) > 0 && (
+            <View style={styles.totalLine}>
+              <Text style={{ color: MUTED }}>
+                {data.discountType === "PERCENT"
+                  ? `Discount (${Number(data.discountValue)}%)`
+                  : "Discount"}
+              </Text>
+              <Text>-{formatMoney(data.discountAmount)}</Text>
+            </View>
+          )}
           <View style={styles.totalLine}>
             <Text style={{ color: MUTED }}>
               Tax ({taxPercent.toFixed(taxPercent % 1 === 0 ? 0 : 2)}%)

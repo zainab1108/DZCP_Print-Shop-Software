@@ -51,6 +51,14 @@ export const documentInput = z.object({
     .trim()
     .regex(/^\d{0,3}(\.\d{1,3})?$/, "Enter a percent like 8.25")
     .default(""),
+  // Document-level discount. The regex allows up to 2dp for both kinds; the
+  // over-100% and negative cases are rejected in resolveDiscount (tested).
+  discountType: z.enum(["PERCENT", "AMOUNT"]).default("AMOUNT"),
+  discountValue: z
+    .string()
+    .trim()
+    .regex(/^\d{0,10}(\.\d{1,2})?$/, "Enter a discount like 10 or 25.00")
+    .default(""),
   terms: optionalTrimmed,
   notes: optionalTrimmed,
   lineItems: z.array(lineItemInput).min(1, "Add at least one line item"),

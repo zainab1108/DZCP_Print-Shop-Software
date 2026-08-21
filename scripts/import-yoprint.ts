@@ -201,7 +201,9 @@ async function importInvoices(customerMaps: {
       (email && customerMaps.emailToCustomerId.get(email)) ||
       customerMaps.nameToCustomerId.get(row.customer_name.trim().toLowerCase());
     if (!customerId) {
-      console.warn(`  no customer match for order ${row.order_id} (${row.customer_name})`);
+      console.warn(
+        `  no customer match for order ${row.order_id} (${row.customer_name})`,
+      );
       unmatched++;
       continue;
     }
@@ -263,7 +265,9 @@ async function importInvoices(customerMaps: {
     }
   }
 
-  console.log(`Invoices: ${rows.length} rows, ${unmatched} unmatched, ${orderIdToInvoiceId.size} created`);
+  console.log(
+    `Invoices: ${rows.length} rows, ${unmatched} unmatched, ${orderIdToInvoiceId.size} created`,
+  );
   return { orderIdToInvoiceId, yoprintInvoiceIdToInvoiceId };
 }
 
@@ -416,7 +420,11 @@ async function importPricing() {
     }
 
     const grid = await prisma.priceGrid.create({
-      data: { name: spec.gridName, method: spec.method, tierLabel: spec.tierLabel },
+      data: {
+        name: spec.gridName,
+        method: spec.method,
+        tierLabel: spec.tierLabel,
+      },
     });
 
     let cellCount = 0;
@@ -426,11 +434,18 @@ async function importPricing() {
         const raw = row[tierName];
         if (!raw) continue;
         const value = spec.useHighOfRange
-          ? raw.split("|").map((s) => s.trim()).pop()!
+          ? raw
+              .split("|")
+              .map((s) => s.trim())
+              .pop()!
           : raw.split("|")[0].trim();
         await prisma.priceCell.upsert({
           where: {
-            gridId_minQuantity_tier: { gridId: grid.id, minQuantity, tier: tierIndex + 1 },
+            gridId_minQuantity_tier: {
+              gridId: grid.id,
+              minQuantity,
+              tier: tierIndex + 1,
+            },
           },
           create: {
             gridId: grid.id,
@@ -443,7 +458,9 @@ async function importPricing() {
         cellCount++;
       }
     }
-    console.log(`Pricing: "${spec.gridName}" -> ${cellCount} cells (tiers: ${header.join(", ")})`);
+    console.log(
+      `Pricing: "${spec.gridName}" -> ${cellCount} cells (tiers: ${header.join(", ")})`,
+    );
   }
 }
 

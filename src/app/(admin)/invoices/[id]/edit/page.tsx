@@ -49,6 +49,10 @@ export default async function EditInvoicePage({
           issueDate: dateToInput(invoice.issueDate),
           secondaryDate: dateToInput(invoice.dueDate),
           taxPercent: rateToPercent(invoice.taxRate),
+          discountType: invoice.discountType,
+          discountValue: invoice.discountValue.isZero()
+            ? ""
+            : invoice.discountValue.toString(),
           terms: invoice.terms ?? "",
           notes: invoice.notes ?? "",
           lineItems: invoice.lineItems.map((l) => ({

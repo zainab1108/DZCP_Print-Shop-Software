@@ -15,9 +15,10 @@ import { decideWebhookOutcome } from "@/lib/stripe-webhook";
  * fails we still record the payment (the money moved) and fall back to OTHER
  * rather than asserting a method we couldn't confirm.
  */
-async function resolvePaymentMethod(
-  paymentIntentId: string,
-): Promise<{ method: ReturnType<typeof mapStripePaymentMethod>; rawType: string }> {
+async function resolvePaymentMethod(paymentIntentId: string): Promise<{
+  method: ReturnType<typeof mapStripePaymentMethod>;
+  rawType: string;
+}> {
   try {
     const pi = await stripe().paymentIntents.retrieve(paymentIntentId, {
       expand: ["latest_charge"],
@@ -144,7 +145,10 @@ export async function POST(request: Request) {
         updated.amountPaid,
       );
       if (status !== updated.status) {
-        await tx.invoice.update({ where: { id: invoice.id }, data: { status } });
+        await tx.invoice.update({
+          where: { id: invoice.id },
+          data: { status },
+        });
       }
 
       return { recorded: true as const, customerId: invoice.customerId };
